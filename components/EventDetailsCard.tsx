@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Platform, StyleSheet, Modal } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { EventDetails } from '@/types/horse';
@@ -12,12 +12,13 @@ interface EventDetailsCardProps {
 
 export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }: EventDetailsCardProps) {
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempTime, setTempTime] = useState<Date>(new Date());
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
     console.log('Time picker event:', event.type, 'Selected date:', selectedDate);
     
-    // On Android, the picker closes automatically after selection or dismissal
     if (Platform.OS === 'android') {
+      // On Android, the picker closes automatically after selection or dismissal
       setShowTimePicker(false);
       
       // Only update if user selected a time (not cancelled)
@@ -28,16 +29,30 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
         console.log('Time picker dismissed (Android)');
       }
     } else {
-      // On iOS, we handle it differently
-      if (event.type === 'set' && selectedDate) {
-        console.log('Setting new start time (iOS):', selectedDate);
-        onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
-        setShowTimePicker(false);
-      } else if (event.type === 'dismissed') {
-        console.log('Time picker dismissed (iOS)');
-        setShowTimePicker(false);
+      // On iOS, just update the temporary time
+      if (selectedDate) {
+        console.log('Updating temp time (iOS):', selectedDate);
+        setTempTime(selectedDate);
       }
     }
+  };
+
+  const handleConfirmTime = () => {
+    console.log('Confirming time selection:', tempTime);
+    onUpdateEventDetails({ ...eventDetails, startTime: tempTime });
+    setShowTimePicker(false);
+  };
+
+  const handleCancelTime = () => {
+    console.log('Cancelling time selection');
+    setShowTimePicker(false);
+  };
+
+  const handleOpenPicker = () => {
+    console.log('Opening time picker');
+    // Set temp time to current start time or now
+    setTempTime(eventDetails.startTime || new Date());
+    setShowTimePicker(true);
   };
 
   const handleHorsesPerHourChange = (text: string) => {
@@ -62,10 +77,7 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
       <Text style={commonStyles.label}>Event Start Time</Text>
       <TouchableOpacity
         style={styles.timeButton}
-        onPress={() => {
-          console.log('Time button pressed, opening picker');
-          setShowTimePicker(true);
-        }}
+        onPress={handleOpenPicker}
         activeOpacity={0.7}
       >
         <Text style={styles.timeButtonText}>
@@ -73,15 +85,47 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
         </Text>
       </TouchableOpacity>
 
-      {showTimePicker && (
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={eventDetails.startTime || new Date()}
-          mode="time"
-          is24Hour={false}
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleTimeChange}
-        />
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={showTimePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={handleCancelTime}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={handleCancelTime} style={styles.modalButton}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Select Time</Text>
+                <TouchableOpacity onPress={handleConfirmTime} style={styles.modalButton}>
+                  <Text style={styles.confirmButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={tempTime}
+                mode="time"
+                is24Hour={false}
+                display="spinner"
+                onChange={handleTimeChange}
+                textColor={colors.text}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        showTimePicker && (
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={eventDetails.startTime || new Date()}
+            mode="time"
+            is24Hour={false}
+            display="default"
+            onChange={handleTimeChange}
+          />
+        )
       )}
 
       <Text style={commonStyles.label}>Horses Per Hour</Text>
@@ -113,5 +157,43 @@ const styles = StyleSheet.create({
   timeButtonText: {
     fontSize: 16,
     color: colors.text,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  modalButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  cancelButtonText: {
+    fontSize: 17,
+    color: colors.textSecondary,
+  },
+  confirmButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.primary,
   },
 });

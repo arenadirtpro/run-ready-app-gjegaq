@@ -10,6 +10,7 @@ export const colors = {
   accent: '#FF4081',
   card: '#FFFFFF',
   highlight: '#BBDEFB',
+  border: '#E0E0E0',
 };
 
 export const buttonStyles = StyleSheet.create({
