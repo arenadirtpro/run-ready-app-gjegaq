@@ -195,9 +195,7 @@ export default function FloatingTabBar({
                         { color: theme.dark ? '#98989D' : '#8E8E93' },
                         isActive && { color: theme.colors.primary, fontWeight: '600' },
                       ]}
-                    >
-                      {tab.label}
-                    </Text>
+                    >My Events</Text>
                   </View>
                 </TouchableOpacity>
                 </React.Fragment>
