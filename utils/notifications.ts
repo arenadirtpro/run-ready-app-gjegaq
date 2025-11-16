@@ -60,23 +60,35 @@ export const scheduleNotificationsForSchedule = async (
     const eventDate = new Date(schedule.eventDate);
     let scheduledCount = 0;
     
+    console.log('Scheduling notifications for event date:', eventDate.toISOString());
+    
     for (const horse of schedule.horses) {
       for (const reminder of horse.reminders) {
         if (reminder.firesAt) {
-          // Combine the event date with the reminder time
+          // Parse the reminder time (which contains the time of day when it should fire)
           const reminderTime = new Date(reminder.firesAt);
-          const trigger = new Date(
+          
+          // Create the actual trigger date by combining the event date with the reminder time
+          const triggerDate = new Date(
             eventDate.getFullYear(),
             eventDate.getMonth(),
             eventDate.getDate(),
             reminderTime.getHours(),
             reminderTime.getMinutes(),
-            reminderTime.getSeconds()
+            0, // seconds
+            0  // milliseconds
           );
           
+          console.log(`Reminder for ${horse.name} - ${reminder.label}:`);
+          console.log(`  Event date: ${eventDate.toISOString()}`);
+          console.log(`  Reminder time: ${reminderTime.toISOString()}`);
+          console.log(`  Trigger date: ${triggerDate.toISOString()}`);
+          console.log(`  Current time: ${now.toISOString()}`);
+          console.log(`  Is in future: ${triggerDate > now}`);
+          
           // Only schedule if the notification time is in the future
-          if (trigger > now) {
-            await Notifications.scheduleNotificationAsync({
+          if (triggerDate > now) {
+            const notificationId = await Notifications.scheduleNotificationAsync({
               content: {
                 title: `${horse.name} - ${reminder.label}`,
                 body: `Time for ${reminder.label}. ${horse.name} runs at ${formatTime(horse.estimatedRunTime)}.`,
@@ -87,22 +99,19 @@ export const scheduleNotificationsForSchedule = async (
                 },
                 sound: 'default',
               },
-              trigger: {
-                date: trigger,
-                channelId: Platform.OS === 'android' ? 'runready-reminders' : undefined,
-              },
+              trigger: triggerDate,
             });
             
             scheduledCount++;
-            console.log(`Scheduled notification for ${horse.name} - ${reminder.label} at ${trigger}`);
+            console.log(`✓ Scheduled notification ${notificationId} for ${horse.name} - ${reminder.label} at ${triggerDate.toLocaleString()}`);
           } else {
-            console.log(`Skipping past notification for ${horse.name} - ${reminder.label} (${trigger})`);
+            console.log(`✗ Skipping past notification for ${horse.name} - ${reminder.label} (trigger: ${triggerDate.toLocaleString()}, now: ${now.toLocaleString()})`);
           }
         }
       }
     }
     
-    console.log(`Scheduled ${scheduledCount} notifications for schedule ${schedule.id}`);
+    console.log(`Successfully scheduled ${scheduledCount} notifications for schedule ${schedule.id}`);
   } catch (error) {
     console.error('Error scheduling notifications:', error);
     throw error;
