@@ -35,8 +35,24 @@ export default function HomeScreen() {
     if (params.scheduleData) {
       try {
         const schedule: SavedSchedule = JSON.parse(params.scheduleData as string);
-        setEventDetails(schedule.eventDetails);
-        setHorses(schedule.horses);
+        
+        // Convert date strings back to Date objects
+        const parsedEventDetails: EventDetails = {
+          ...schedule.eventDetails,
+          startTime: schedule.eventDetails.startTime ? new Date(schedule.eventDetails.startTime) : null,
+        };
+        
+        const parsedHorses: Horse[] = schedule.horses.map(horse => ({
+          ...horse,
+          estimatedRunTime: horse.estimatedRunTime ? new Date(horse.estimatedRunTime) : null,
+          reminders: horse.reminders.map(reminder => ({
+            ...reminder,
+            firesAt: reminder.firesAt ? new Date(reminder.firesAt) : null,
+          })),
+        }));
+        
+        setEventDetails(parsedEventDetails);
+        setHorses(parsedHorses);
         setScheduleName(schedule.name);
         setEventDate(new Date(schedule.eventDate));
         setNotificationsEnabled(schedule.notificationsEnabled);
@@ -45,6 +61,7 @@ export default function HomeScreen() {
         console.log('Loaded schedule for editing:', schedule.id);
       } catch (error) {
         console.error('Error loading schedule:', error);
+        Alert.alert('Error', 'Failed to load schedule for editing. Please try again.');
       }
     }
   }, [params.scheduleData]);

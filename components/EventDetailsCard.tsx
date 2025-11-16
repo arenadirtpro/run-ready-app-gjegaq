@@ -63,7 +63,16 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
   const formatTimeDisplay = (date: Date | null) => {
     if (!date) return 'Select Time';
     
-    return date.toLocaleTimeString('en-US', {
+    // Ensure date is a Date object
+    const dateObj = date instanceof Date ? date : new Date(date);
+    
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.error('Invalid date:', date);
+      return 'Select Time';
+    }
+    
+    return dateObj.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,

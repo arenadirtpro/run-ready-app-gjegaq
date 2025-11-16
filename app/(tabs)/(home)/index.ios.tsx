@@ -35,8 +35,24 @@ export default function HomeScreen() {
     if (params.scheduleData) {
       try {
         const schedule: SavedSchedule = JSON.parse(params.scheduleData as string);
-        setEventDetails(schedule.eventDetails);
-        setHorses(schedule.horses);
+        
+        // Convert date strings back to Date objects
+        const parsedEventDetails: EventDetails = {
+          ...schedule.eventDetails,
+          startTime: schedule.eventDetails.startTime ? new Date(schedule.eventDetails.startTime) : null,
+        };
+        
+        const parsedHorses: Horse[] = schedule.horses.map(horse => ({
+          ...horse,
+          estimatedRunTime: horse.estimatedRunTime ? new Date(horse.estimatedRunTime) : null,
+          reminders: horse.reminders.map(reminder => ({
+            ...reminder,
+            firesAt: reminder.firesAt ? new Date(reminder.firesAt) : null,
+          })),
+        }));
+        
+        setEventDetails(parsedEventDetails);
+        setHorses(parsedHorses);
         setScheduleName(schedule.name);
         setEventDate(new Date(schedule.eventDate));
         setNotificationsEnabled(schedule.notificationsEnabled);
@@ -45,6 +61,7 @@ export default function HomeScreen() {
         console.log('Loaded schedule for editing:', schedule.id);
       } catch (error) {
         console.error('Error loading schedule:', error);
+        Alert.alert('Error', 'Failed to load schedule for editing. Please try again.');
       }
     }
   }, [params.scheduleData]);
@@ -158,10 +175,10 @@ export default function HomeScreen() {
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
     if (event.type === 'set' && selectedDate) {
       setEventDate(selectedDate);
     }
+    setShowDatePicker(false);
   };
 
   const handleConfirmSave = async () => {
@@ -271,7 +288,7 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.appTitle}>RunReady</Text>
-          <Text style={styles.appSubtitle}>Precise Run Time Estimates</Text>
+          <Text style={styles.appSubtitle}>Run Time Estimates + Notifications</Text>
         </View>
 
         <EventDetailsCard
@@ -344,7 +361,7 @@ export default function HomeScreen() {
               <DateTimePicker
                 value={eventDate}
                 mode="date"
-                display="default"
+                display="inline"
                 onChange={handleDateChange}
                 minimumDate={new Date()}
               />
@@ -439,10 +456,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)',
   },
   modalTitle: {
     fontSize: 24,
