@@ -14,13 +14,31 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedDate) {
+    console.log('Time picker event:', event.type, selectedDate);
+    
+    // On Android, hide picker after selection or dismissal
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+    
+    // Only update if user selected a date (not cancelled)
+    if (event.type === 'set' && selectedDate) {
+      console.log('Setting new start time:', selectedDate);
       onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
+      
+      // On iOS, hide picker after selection
+      if (Platform.OS === 'ios') {
+        setShowTimePicker(false);
+      }
+    } else if (event.type === 'dismissed') {
+      console.log('Time picker dismissed');
+      // Just close the picker, don't update the time
+      setShowTimePicker(false);
     }
   };
 
   const handleHorsesPerHourChange = (text: string) => {
+    console.log('Horses per hour changed:', text);
     onUpdateEventDetails({ ...eventDetails, horsesPerHour: text });
   };
 
@@ -31,7 +49,10 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
       <Text style={commonStyles.label}>Event Start Time</Text>
       <TouchableOpacity
         style={styles.timeButton}
-        onPress={() => setShowTimePicker(true)}
+        onPress={() => {
+          console.log('Opening time picker');
+          setShowTimePicker(true);
+        }}
       >
         <Text style={styles.timeButtonText}>
           {eventDetails.startTime

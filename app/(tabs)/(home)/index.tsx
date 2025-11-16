@@ -17,17 +17,27 @@ export default function HomeScreen() {
 
   // Recalculate run times when event details change
   useEffect(() => {
+    console.log('Event details changed:', {
+      startTime: eventDetails.startTime,
+      horsesPerHour: eventDetails.horsesPerHour,
+    });
+
     if (eventDetails.startTime && eventDetails.horsesPerHour) {
       const horsesPerHour = parseFloat(eventDetails.horsesPerHour);
+      console.log('Parsed horses per hour:', horsesPerHour);
+      
       if (horsesPerHour > 0) {
         const updatedHorses = horses.map(horse => {
           const drawNumber = parseInt(horse.drawNumber);
+          console.log(`Processing horse ${horse.name}, draw number: ${drawNumber}`);
+          
           if (drawNumber > 0) {
             const estimatedRunTime = calculateEstimatedRunTime(
               eventDetails.startTime,
               horsesPerHour,
               drawNumber
             );
+            console.log(`Calculated run time for ${horse.name}:`, estimatedRunTime);
             
             // Update reminder fire times
             const updatedReminders = horse.reminders.map(reminder => ({
@@ -63,12 +73,21 @@ export default function HomeScreen() {
     const horsesPerHour = parseFloat(eventDetails.horsesPerHour);
     const drawNumber = parseInt(updatedHorse.drawNumber);
     
+    console.log('Updating horse:', {
+      name: updatedHorse.name,
+      drawNumber,
+      horsesPerHour,
+      startTime: eventDetails.startTime,
+    });
+    
     if (eventDetails.startTime && horsesPerHour > 0 && drawNumber > 0) {
       const estimatedRunTime = calculateEstimatedRunTime(
         eventDetails.startTime,
         horsesPerHour,
         drawNumber
       );
+      
+      console.log('Calculated estimated run time:', estimatedRunTime);
       
       const updatedReminders = updatedHorse.reminders.map(reminder => ({
         ...reminder,
