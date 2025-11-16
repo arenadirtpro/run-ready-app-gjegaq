@@ -1,75 +1,84 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { colors, commonStyles } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
-
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
+    <View style={commonStyles.container}>
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <GlassView style={styles.profileHeader} glassEffectStyle="regular">
-          <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="person" size={24} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.subtitle}>Manage your RunReady settings</Text>
+        </View>
 
-        <GlassView style={styles.section} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol ios_icon_name="phone.fill" android_material_icon_name="phone" size={24} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <IconSymbol ios_icon_name="location.fill" android_material_icon_name="location-on" size={24} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
-          </View>
-        </GlassView>
+        <View style={commonStyles.card}>
+          <Text style={styles.cardTitle}>About RunReady</Text>
+          <Text style={styles.cardText}>
+            RunReady helps horse competitors calculate precise run times and manage pre-run tasks with automatic reminders.
+          </Text>
+        </View>
+
+        <View style={commonStyles.card}>
+          <Text style={styles.cardTitle}>Features</Text>
+          <Text style={styles.cardText}>
+            - Calculate estimated run times based on draw numbers{'\n'}
+            - Set custom reminders for pre-run tasks{'\n'}
+            - Automatic time calculations{'\n'}
+            - Clean, intuitive interface
+          </Text>
+        </View>
+
+        <View style={commonStyles.card}>
+          <Text style={styles.cardTitle}>Version</Text>
+          <Text style={styles.cardText}>RunReady v1.0.0</Text>
+        </View>
+
+        <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  scrollView: {
     flex: 1,
   },
-  container: {
-    flex: 1,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  contentContainer: {
-    padding: 20,
-  },
-  profileHeader: {
+  header: {
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 32,
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 24,
+    marginTop: 16,
   },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: 4,
   },
-  email: {
+  subtitle: {
     fontSize: 16,
+    color: colors.textSecondary,
   },
-  section: {
-    borderRadius: 12,
-    padding: 20,
-    gap: 12,
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  infoText: {
+  cardText: {
     fontSize: 16,
+    color: colors.text,
+    lineHeight: 24,
+  },
+  bottomPadding: {
+    height: 120,
   },
 });
