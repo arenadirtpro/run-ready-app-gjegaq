@@ -227,15 +227,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleViewTodaysRuns = () => {
-    console.log('Viewing today\'s runs');
-    Alert.alert(
-      'Today\'s Runs',
-      'This feature will show all scheduled runs for today.',
-      [{ text: 'OK' }]
-    );
-  };
-
   return (
     <View style={commonStyles.container}>
       <ScrollView
@@ -277,13 +268,6 @@ export default function HomeScreen() {
             <Text style={buttonStyles.buttonText}>
               {editingScheduleId ? 'Update Schedule' : 'Save Schedule'}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[buttonStyles.accentButton, styles.actionButton]}
-            onPress={handleViewTodaysRuns}
-          >
-            <Text style={buttonStyles.buttonText}>View Today&apos;s Runs</Text>
           </TouchableOpacity>
         </View>
 
