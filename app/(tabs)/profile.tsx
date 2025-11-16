@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { SavedSchedule } from '@/types/savedSchedule';
 import { getAllSchedules, deleteSchedule } from '@/utils/storage';
@@ -9,11 +9,15 @@ import { formatTime } from '@/utils/timeCalculations';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import * as MailComposer from 'expo-mail-composer';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [schedules, setSchedules] = useState<SavedSchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'feedback' | 'feature'>('feedback');
+  const [feedbackText, setFeedbackText] = useState('');
 
   const loadSchedules = async () => {
     try {
@@ -70,6 +74,60 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
+
+  const handleOpenFeedbackModal = (type: 'feedback' | 'feature') => {
+    setFeedbackType(type);
+    setFeedbackText('');
+    setFeedbackModalVisible(true);
+  };
+
+  const handleSendFeedback = async () => {
+    if (!feedbackText.trim()) {
+      Alert.alert('Error', 'Please enter your feedback before sending.');
+      return;
+    }
+
+    try {
+      const isAvailable = await MailComposer.isAvailableAsync();
+      
+      if (!isAvailable) {
+        Alert.alert(
+          'Email Not Available',
+          'Email is not configured on this device. Please set up an email account in your device settings.'
+        );
+        return;
+      }
+
+      const subject = feedbackType === 'feedback' 
+        ? 'RunReady App - User Feedback' 
+        : 'RunReady App - Feature Request';
+      
+      const body = `${feedbackType === 'feedback' ? 'Feedback' : 'Feature Request'}:\n\n${feedbackText}\n\n---\nSent from RunReady App`;
+
+      const result = await MailComposer.composeAsync({
+        recipients: ['feedback@runreadyapp.com'], // Replace with your actual email
+        subject: subject,
+        body: body,
+      });
+
+      console.log('Mail composer result:', result);
+
+      if (result.status === 'sent' || result.status === 'saved') {
+        setFeedbackModalVisible(false);
+        setFeedbackText('');
+        Alert.alert(
+          'Thank You!',
+          'Thank you for your feedback! We appreciate your input and will review it carefully.'
+        );
+      }
+    } catch (error) {
+      console.error('Error sending feedback:', error);
+      Alert.alert(
+        'Error',
+        'Failed to open email composer. Please try again or contact us directly at feedback@runreadyapp.com'
+      );
+    }
   };
 
   const formatDate = (dateString: string): string => {
@@ -192,8 +250,125 @@ export default function ProfileScreen() {
           ))
         )}
 
+        <View style={styles.feedbackSection}>
+          <Text style={styles.feedbackSectionTitle}>Help Us Improve</Text>
+          <Text style={styles.feedbackSectionSubtitle}>
+            We&apos;d love to hear your thoughts and ideas!
+          </Text>
+          
+          <View style={styles.feedbackButtons}>
+            <TouchableOpacity
+              style={[buttonStyles.primaryButton, styles.feedbackButton]}
+              onPress={() => handleOpenFeedbackModal('feedback')}
+            >
+              <IconSymbol
+                ios_icon_name="bubble.left.and.bubble.right.fill"
+                android_material_icon_name="feedback"
+                size={20}
+                color={colors.background}
+              />
+              <Text style={[buttonStyles.buttonText, styles.feedbackButtonText]}>
+                Send Feedback
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[buttonStyles.secondaryButton, styles.feedbackButton]}
+              onPress={() => handleOpenFeedbackModal('feature')}
+            >
+              <IconSymbol
+                ios_icon_name="lightbulb.fill"
+                android_material_icon_name="lightbulb"
+                size={20}
+                color={colors.text}
+              />
+              <Text style={[buttonStyles.buttonText, styles.feedbackButtonText]}>
+                Request Feature
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <Modal
+        visible={feedbackModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setFeedbackModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {feedbackType === 'feedback' ? 'Send Feedback' : 'Request a Feature'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setFeedbackModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <IconSymbol
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={28}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDescription}>
+              {feedbackType === 'feedback'
+                ? 'Tell us what you think about RunReady. Your feedback helps us improve the app!'
+                : 'Have an idea for a new feature? Let us know what you&apos;d like to see in RunReady!'}
+            </Text>
+
+            <TextInput
+              style={styles.feedbackInput}
+              placeholder={
+                feedbackType === 'feedback'
+                  ? 'Share your thoughts...'
+                  : 'Describe your feature idea...'
+              }
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+              value={feedbackText}
+              onChangeText={setFeedbackText}
+              maxLength={1000}
+            />
+
+            <Text style={styles.characterCount}>
+              {feedbackText.length}/1000 characters
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[buttonStyles.secondaryButton, styles.modalButton]}
+                onPress={() => setFeedbackModalVisible(false)}
+              >
+                <Text style={buttonStyles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[buttonStyles.primaryButton, styles.modalButton]}
+                onPress={handleSendFeedback}
+              >
+                <IconSymbol
+                  ios_icon_name="paperplane.fill"
+                  android_material_icon_name="send"
+                  size={18}
+                  color={colors.background}
+                />
+                <Text style={[buttonStyles.buttonText, styles.sendButtonText]}>
+                  Send
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -330,6 +505,108 @@ const styles = StyleSheet.create({
   },
   buttonTextWithIcon: {
     marginLeft: 0,
+  },
+  feedbackSection: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  feedbackSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  feedbackSectionSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  feedbackButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  feedbackButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  feedbackButtonText: {
+    marginLeft: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  feedbackInput: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 150,
+    maxHeight: 250,
+  },
+  characterCount: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'right',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+  },
+  sendButtonText: {
+    marginLeft: 6,
   },
   bottomPadding: {
     height: 120,
