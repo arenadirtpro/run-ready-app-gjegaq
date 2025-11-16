@@ -18,10 +18,8 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
     console.log('Time picker event:', event.type, 'Selected date:', selectedDate);
     
     if (Platform.OS === 'android') {
-      // On Android, the picker closes automatically after selection or dismissal
       setShowTimePicker(false);
       
-      // Only update if user selected a time (not cancelled)
       if (event.type === 'set' && selectedDate) {
         console.log('Setting new start time (Android):', selectedDate);
         onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
@@ -29,7 +27,6 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
         console.log('Time picker dismissed (Android)');
       }
     } else {
-      // On iOS, just update the temporary time
       if (selectedDate) {
         console.log('Updating temp time (iOS):', selectedDate);
         setTempTime(selectedDate);
@@ -50,7 +47,6 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
 
   const handleOpenPicker = () => {
     console.log('Opening time picker');
-    // Set temp time to current start time or now
     setTempTime(eventDetails.startTime || new Date());
     setShowTimePicker(true);
   };
@@ -63,10 +59,8 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
   const formatTimeDisplay = (date: Date | null) => {
     if (!date) return 'Select Time';
     
-    // Ensure date is a Date object
     const dateObj = date instanceof Date ? date : new Date(date);
     
-    // Check if the date is valid
     if (isNaN(dateObj.getTime())) {
       console.error('Invalid date:', date);
       return 'Select Time';
@@ -80,10 +74,8 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
   };
 
   return (
-    <View style={[commonStyles.card, styles.card]}>
-      <Text style={commonStyles.title}>Event Details</Text>
-      
-      <Text style={commonStyles.label}>Event Start Time</Text>
+    <View style={styles.card}>
+      <Text style={styles.label}>Event Start Time</Text>
       <TouchableOpacity
         style={styles.timeButton}
         onPress={handleOpenPicker}
@@ -137,9 +129,9 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
         )
       )}
 
-      <Text style={commonStyles.label}>Horses Per Hour</Text>
+      <Text style={styles.label}>Horses Per Hour</Text>
       <TextInput
-        style={commonStyles.input}
+        style={styles.input}
         value={eventDetails.horsesPerHour}
         onChangeText={handleHorsesPerHourChange}
         keyboardType="numeric"
@@ -152,7 +144,18 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
 
 const styles = StyleSheet.create({
   card: {
-    marginTop: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
   },
   timeButton: {
     backgroundColor: colors.card,
@@ -161,11 +164,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   timeButtonText: {
     fontSize: 16,
     color: colors.text,
+  },
+  input: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: 12,
   },
   modalOverlay: {
     flex: 1,

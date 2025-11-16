@@ -1,147 +1,152 @@
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
+import { colors } from '@/styles/commonStyles';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Stack, useRouter, usePathname } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function TabLayout() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Determine active tab based on pathname
-  const isNewEventActive = pathname.includes('/(home)') || pathname === '/(tabs)';
-  const isSavedEventsActive = pathname.includes('/profile');
-
   const handleNewEventPress = () => {
-    router.push('/(tabs)/(home)/');
+    router.push('/(tabs)/(home)');
   };
 
   const handleSavedEventsPress = () => {
-    router.push('/(tabs)/profile');
+    router.push('/profile');
+  };
+
+  const handleHorsesPress = () => {
+    router.push('/horses');
+  };
+
+  const isActive = (path: string) => {
+    if (path === '/(tabs)/(home)') {
+      return pathname === '/(tabs)/(home)' || pathname === '/';
+    }
+    return pathname.startsWith(path);
   };
 
   return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'none',
-        }}
-      >
-        <Stack.Screen key="home" name="(home)" />
-        <Stack.Screen key="profile" name="profile" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(home)" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="horses" />
       </Stack>
       
-      {/* Toggle Buttons at Bottom */}
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            isActive('/(tabs)/(home)') && styles.tabButtonActive,
+          ]}
+          onPress={handleNewEventPress}
+        >
+          <IconSymbol
+            ios_icon_name="plus.circle.fill"
+            android_material_icon_name="add_circle"
+            size={24}
+            color={isActive('/(tabs)/(home)') ? colors.background : colors.text}
+          />
+          <Text
             style={[
-              styles.toggleButton,
-              styles.leftButton,
-              isNewEventActive && styles.activeButton,
+              styles.tabButtonText,
+              isActive('/(tabs)/(home)') && styles.tabButtonTextActive,
             ]}
-            onPress={handleNewEventPress}
-            activeOpacity={0.7}
           >
-            <IconSymbol
-              ios_icon_name="plus.circle.fill"
-              android_material_icon_name="add_circle"
-              size={24}
-              color={isNewEventActive ? colors.background : colors.text}
-            />
-            <Text
-              style={[
-                styles.toggleButtonText,
-                isNewEventActive && styles.activeButtonText,
-              ]}
-            >
-              New Event
-            </Text>
-          </TouchableOpacity>
+            New Event
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            isActive('/profile') && styles.tabButtonActive,
+          ]}
+          onPress={handleSavedEventsPress}
+        >
+          <IconSymbol
+            ios_icon_name="calendar"
+            android_material_icon_name="event"
+            size={24}
+            color={isActive('/profile') ? colors.background : colors.text}
+          />
+          <Text
             style={[
-              styles.toggleButton,
-              styles.rightButton,
-              isSavedEventsActive && styles.activeButton,
+              styles.tabButtonText,
+              isActive('/profile') && styles.tabButtonTextActive,
             ]}
-            onPress={handleSavedEventsPress}
-            activeOpacity={0.7}
           >
-            <IconSymbol
-              ios_icon_name="bookmark.fill"
-              android_material_icon_name="bookmark"
-              size={24}
-              color={isSavedEventsActive ? colors.background : colors.text}
-            />
-            <Text
-              style={[
-                styles.toggleButtonText,
-                isSavedEventsActive && styles.activeButtonText,
-              ]}
-            >
-              Saved Events
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </>
+            Saved Events
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            isActive('/horses') && styles.tabButtonActive,
+          ]}
+          onPress={handleHorsesPress}
+        >
+          <IconSymbol
+            ios_icon_name="figure.equestrian.sports"
+            android_material_icon_name="pets"
+            size={24}
+            color={isActive('/horses') ? colors.background : colors.text}
+          />
+          <Text
+            style={[
+              styles.tabButtonText,
+              isActive('/horses') && styles.tabButtonTextActive,
+            ]}
+          >
+            Horses
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: 'transparent',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: colors.background,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  toggleButton: {
+  container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  tabBar: {
     flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingBottom: 0,
+    paddingTop: 8,
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    gap: 8,
-    backgroundColor: colors.background,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
   },
-  leftButton: {
-    borderRightWidth: 1,
-    borderRightColor: colors.primary,
-  },
-  rightButton: {
-    borderLeftWidth: 1,
-    borderLeftColor: colors.primary,
-  },
-  activeButton: {
+  tabButtonActive: {
     backgroundColor: colors.primary,
   },
-  toggleButtonText: {
-    fontSize: 16,
+  tabButtonText: {
+    fontSize: 12,
     fontWeight: '600',
     color: colors.text,
+    marginTop: 4,
+    textAlign: 'center',
   },
-  activeButtonText: {
+  tabButtonTextActive: {
     color: colors.background,
   },
 });

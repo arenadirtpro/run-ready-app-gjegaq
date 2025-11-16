@@ -27,7 +27,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Reload schedules when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadSchedules();
@@ -36,7 +35,6 @@ export default function ProfileScreen() {
 
   const handleEditSchedule = (schedule: SavedSchedule) => {
     try {
-      // Navigate to home screen with schedule data
       router.push({
         pathname: '/(tabs)/(home)',
         params: {
@@ -91,7 +89,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Saved Schedules</Text>
+          <Text style={styles.title}>Saved Events</Text>
           <Text style={styles.subtitle}>Manage your event schedules</Text>
         </View>
 
@@ -101,7 +99,7 @@ export default function ProfileScreen() {
           </View>
         ) : schedules.length === 0 ? (
           <View style={commonStyles.card}>
-            <Text style={styles.emptyText}>No saved schedules yet.</Text>
+            <Text style={styles.emptyText}>No saved events yet.</Text>
             <Text style={styles.emptySubtext}>
               Create a schedule on the home screen and save it to see it here.
             </Text>
@@ -113,7 +111,7 @@ export default function ProfileScreen() {
                 <View style={styles.scheduleHeaderLeft}>
                   <Text style={styles.scheduleName}>{schedule.name}</Text>
                   <Text style={styles.scheduleDate}>
-                    Event: {formatDate(schedule.eventDate)}
+                    {formatDate(schedule.eventDate)}
                   </Text>
                 </View>
                 {schedule.notificationsEnabled && (
@@ -130,39 +128,34 @@ export default function ProfileScreen() {
 
               <View style={styles.scheduleDetails}>
                 <View style={styles.detailRow}>
-                  <IconSymbol
-                    ios_icon_name="clock.fill"
-                    android_material_icon_name="schedule"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={styles.detailText}>
-                    Start: {formatTime(schedule.eventDetails.startTime)}
+                  <Text style={styles.detailLabel}>Start Time:</Text>
+                  <Text style={styles.detailValue}>
+                    {formatTime(schedule.eventDetails.startTime)}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <IconSymbol
-                    ios_icon_name="gauge"
-                    android_material_icon_name="speed"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={styles.detailText}>
-                    {schedule.eventDetails.horsesPerHour} horses/hour
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <IconSymbol
-                    ios_icon_name="figure.equestrian.sports"
-                    android_material_icon_name="pets"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={styles.detailText}>
-                    {schedule.horses.length} {schedule.horses.length === 1 ? 'horse' : 'horses'}
+                  <Text style={styles.detailLabel}>Horses/Hour:</Text>
+                  <Text style={styles.detailValue}>
+                    {schedule.eventDetails.horsesPerHour}
                   </Text>
                 </View>
               </View>
+
+              {schedule.horses.length > 0 && (
+                <View style={styles.horsesSection}>
+                  <Text style={styles.horsesSectionTitle}>Estimated Run Times:</Text>
+                  {schedule.horses.map((horse, index) => (
+                    <View key={index} style={styles.horseRow}>
+                      <Text style={styles.horseName}>
+                        {horse.name || `Horse #${horse.drawNumber}`}
+                      </Text>
+                      <Text style={styles.horseRunTime}>
+                        {horse.estimatedRunTime ? formatTime(horse.estimatedRunTime) : 'N/A'}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
 
               <View style={styles.scheduleActions}>
                 <TouchableOpacity
@@ -263,8 +256,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   scheduleDate: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
+    fontWeight: '500',
   },
   notificationBadge: {
     backgroundColor: colors.primaryLight,
@@ -273,17 +267,55 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   scheduleDetails: {
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   detailRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 6,
   },
-  detailText: {
+  detailLabel: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  detailValue: {
     fontSize: 15,
     color: colors.text,
+    fontWeight: '600',
+  },
+  horsesSection: {
+    marginBottom: 16,
+  },
+  horsesSectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  horseRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: colors.highlight,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  horseName: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  horseRunTime: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
   scheduleActions: {
     flexDirection: 'row',
