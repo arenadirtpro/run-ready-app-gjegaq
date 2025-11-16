@@ -6,11 +6,15 @@ export const colors = {
   text: '#212121',
   textSecondary: '#757575',
   primary: '#303F9F',
+  primaryLight: '#E8EAF6',
   secondary: '#9FA8DA',
   accent: '#FF4081',
   card: '#FFFFFF',
+  cardBackground: '#FFFFFF',
   highlight: '#BBDEFB',
   border: '#E0E0E0',
+  inputBackground: '#FAFAFA',
+  danger: '#D32F2F',
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -34,6 +38,15 @@ export const buttonStyles = StyleSheet.create({
   },
   accentButton: {
     backgroundColor: colors.accent,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 6,
+  },
+  dangerButton: {
+    backgroundColor: colors.danger,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
