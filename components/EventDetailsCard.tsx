@@ -14,32 +14,45 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
-    console.log('Time picker event:', event.type, selectedDate);
+    console.log('Time picker event:', event.type, 'Selected date:', selectedDate);
     
-    // On Android, hide picker after selection or dismissal
+    // On Android, the picker closes automatically after selection or dismissal
     if (Platform.OS === 'android') {
       setShowTimePicker(false);
-    }
-    
-    // Only update if user selected a date (not cancelled)
-    if (event.type === 'set' && selectedDate) {
-      console.log('Setting new start time:', selectedDate);
-      onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
       
-      // On iOS, hide picker after selection
-      if (Platform.OS === 'ios') {
+      // Only update if user selected a time (not cancelled)
+      if (event.type === 'set' && selectedDate) {
+        console.log('Setting new start time (Android):', selectedDate);
+        onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
+      } else {
+        console.log('Time picker dismissed (Android)');
+      }
+    } else {
+      // On iOS, we handle it differently
+      if (event.type === 'set' && selectedDate) {
+        console.log('Setting new start time (iOS):', selectedDate);
+        onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
+        setShowTimePicker(false);
+      } else if (event.type === 'dismissed') {
+        console.log('Time picker dismissed (iOS)');
         setShowTimePicker(false);
       }
-    } else if (event.type === 'dismissed') {
-      console.log('Time picker dismissed');
-      // Just close the picker, don't update the time
-      setShowTimePicker(false);
     }
   };
 
   const handleHorsesPerHourChange = (text: string) => {
     console.log('Horses per hour changed:', text);
     onUpdateEventDetails({ ...eventDetails, horsesPerHour: text });
+  };
+
+  const formatTimeDisplay = (date: Date | null) => {
+    if (!date) return 'Select Time';
+    
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
   return (
@@ -50,23 +63,19 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
       <TouchableOpacity
         style={styles.timeButton}
         onPress={() => {
-          console.log('Opening time picker');
+          console.log('Time button pressed, opening picker');
           setShowTimePicker(true);
         }}
+        activeOpacity={0.7}
       >
         <Text style={styles.timeButtonText}>
-          {eventDetails.startTime
-            ? eventDetails.startTime.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              })
-            : 'Select Time'}
+          {formatTimeDisplay(eventDetails.startTime)}
         </Text>
       </TouchableOpacity>
 
       {showTimePicker && (
         <DateTimePicker
+          testID="dateTimePicker"
           value={eventDetails.startTime || new Date()}
           mode="time"
           is24Hour={false}
