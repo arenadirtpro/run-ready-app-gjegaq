@@ -185,6 +185,8 @@ export default function HomeScreen() {
                   setSaveModalVisible(false);
                   setScheduleName('');
                   setEditingScheduleId(null);
+                  // Navigate to Saved Events page
+                  router.push('/profile');
                 },
               },
             ]
@@ -200,6 +202,8 @@ export default function HomeScreen() {
                   setSaveModalVisible(false);
                   setScheduleName('');
                   setEditingScheduleId(null);
+                  // Navigate to Saved Events page
+                  router.push('/profile');
                 },
               },
             ]
@@ -216,6 +220,8 @@ export default function HomeScreen() {
                 setSaveModalVisible(false);
                 setScheduleName('');
                 setEditingScheduleId(null);
+                // Navigate to Saved Events page
+                router.push('/profile');
               },
             },
           ]
