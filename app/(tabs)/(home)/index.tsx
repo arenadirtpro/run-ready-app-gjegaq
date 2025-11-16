@@ -236,7 +236,7 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.appTitle}>RunReady</Text>
-          <Text style={styles.appSubtitle}>Precise Run Time Estimates</Text>
+          <Text style={styles.appSubtitle}>Run Time Estimates + Notifications</Text>
         </View>
 
         <EventDetailsCard
@@ -258,7 +258,7 @@ export default function HomeScreen() {
             style={[buttonStyles.secondaryButton, styles.actionButton]}
             onPress={handleAddHorse}
           >
-            <Text style={buttonStyles.buttonText}>+ Add Another Horse</Text>
+            <Text style={buttonStyles.buttonText}>+ Add Horse</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
