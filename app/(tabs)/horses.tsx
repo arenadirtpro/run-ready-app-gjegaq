@@ -175,18 +175,37 @@ export default function HorsesScreen() {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
+              <IconSymbol
+                ios_icon_name="star.circle.fill"
+                android_material_icon_name="stars"
+                size={56}
+                color={colors.primary}
+              />
               <Text style={styles.modalTitle}>Pro Feature</Text>
               <Text style={styles.modalText}>
                 This feature is available in the Pro version. Upgrade to unlock horse templates and advanced management features.
               </Text>
-              <Text style={styles.modalSubtext}>
-                Coming soon: In-app purchase integration
-              </Text>
+              
+              <View style={styles.comingSoonBanner}>
+                <IconSymbol
+                  ios_icon_name="clock.fill"
+                  android_material_icon_name="schedule"
+                  size={28}
+                  color={colors.primary}
+                />
+                <View style={styles.comingSoonTextContainer}>
+                  <Text style={styles.comingSoonTitle}>COMING SOON!</Text>
+                  <Text style={styles.comingSoonSubtext}>
+                    Pro version is in active development
+                  </Text>
+                </View>
+              </View>
+
               <TouchableOpacity
                 style={[buttonStyles.primaryButton, styles.modalButton]}
                 onPress={() => setShowProModal(false)}
               >
-                <Text style={buttonStyles.buttonText}>OK</Text>
+                <Text style={buttonStyles.buttonText}>Got It</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -514,20 +533,41 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
+    marginTop: 12,
     marginBottom: 16,
   },
   modalText: {
     fontSize: 16,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 20,
     lineHeight: 22,
   },
-  modalSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  comingSoonBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 24,
+    width: '100%',
+    gap: 12,
+  },
+  comingSoonTextContainer: {
+    flex: 1,
+  },
+  comingSoonTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.background,
+    marginBottom: 4,
+    letterSpacing: 1,
+  },
+  comingSoonSubtext: {
+    fontSize: 14,
+    color: colors.background,
+    fontWeight: '500',
+    opacity: 0.9,
   },
   modalButton: {
     width: '100%',
