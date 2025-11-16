@@ -35,13 +35,18 @@ export default function ProfileScreen() {
   );
 
   const handleEditSchedule = (schedule: SavedSchedule) => {
-    // Navigate to home screen with schedule data
-    router.push({
-      pathname: '/(tabs)/(home)',
-      params: {
-        scheduleData: JSON.stringify(schedule),
-      },
-    });
+    try {
+      // Navigate to home screen with schedule data
+      router.push({
+        pathname: '/(tabs)/(home)',
+        params: {
+          scheduleData: JSON.stringify(schedule),
+        },
+      });
+    } catch (error) {
+      console.error('Error navigating to edit schedule:', error);
+      Alert.alert('Error', 'Failed to load schedule for editing. Please try again.');
+    }
   };
 
   const handleDeleteSchedule = (schedule: SavedSchedule) => {
@@ -108,7 +113,7 @@ export default function ProfileScreen() {
                 <View style={styles.scheduleHeaderLeft}>
                   <Text style={styles.scheduleName}>{schedule.name}</Text>
                   <Text style={styles.scheduleDate}>
-                    Updated: {formatDate(schedule.updatedAt)}
+                    Event: {formatDate(schedule.eventDate)}
                   </Text>
                 </View>
                 {schedule.notificationsEnabled && (

@@ -4,7 +4,7 @@ import { EventDetails, Horse } from './horse';
 export interface SavedSchedule {
   id: string;
   name: string;
-  eventDate: Date;
+  eventDate: string;
   eventDetails: EventDetails;
   horses: Horse[];
   notificationsEnabled: boolean;

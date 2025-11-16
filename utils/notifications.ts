@@ -57,32 +57,47 @@ export const scheduleNotificationsForSchedule = async (
     }
     
     const now = new Date();
+    const eventDate = new Date(schedule.eventDate);
     let scheduledCount = 0;
     
     for (const horse of schedule.horses) {
       for (const reminder of horse.reminders) {
-        if (reminder.firesAt && reminder.firesAt > now) {
-          const trigger = new Date(reminder.firesAt);
+        if (reminder.firesAt) {
+          // Combine the event date with the reminder time
+          const reminderTime = new Date(reminder.firesAt);
+          const trigger = new Date(
+            eventDate.getFullYear(),
+            eventDate.getMonth(),
+            eventDate.getDate(),
+            reminderTime.getHours(),
+            reminderTime.getMinutes(),
+            reminderTime.getSeconds()
+          );
           
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `${horse.name} - ${reminder.label}`,
-              body: `Time for ${reminder.label}. ${horse.name} runs at ${formatTime(horse.estimatedRunTime)}.`,
-              data: {
-                scheduleId: schedule.id,
-                horseId: horse.id,
-                reminderId: reminder.id,
+          // Only schedule if the notification time is in the future
+          if (trigger > now) {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: `${horse.name} - ${reminder.label}`,
+                body: `Time for ${reminder.label}. ${horse.name} runs at ${formatTime(horse.estimatedRunTime)}.`,
+                data: {
+                  scheduleId: schedule.id,
+                  horseId: horse.id,
+                  reminderId: reminder.id,
+                },
+                sound: 'default',
               },
-              sound: 'default',
-            },
-            trigger: {
-              date: trigger,
-              channelId: Platform.OS === 'android' ? 'runready-reminders' : undefined,
-            },
-          });
-          
-          scheduledCount++;
-          console.log(`Scheduled notification for ${horse.name} - ${reminder.label} at ${trigger}`);
+              trigger: {
+                date: trigger,
+                channelId: Platform.OS === 'android' ? 'runready-reminders' : undefined,
+              },
+            });
+            
+            scheduledCount++;
+            console.log(`Scheduled notification for ${horse.name} - ${reminder.label} at ${trigger}`);
+          } else {
+            console.log(`Skipping past notification for ${horse.name} - ${reminder.label} (${trigger})`);
+          }
         }
       }
     }
