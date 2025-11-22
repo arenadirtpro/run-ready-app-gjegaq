@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Modal, Image } from 'react-native';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, buttonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { HorseTemplate } from '@/types/horseTemplate';
 import { getAllHorseTemplates, deleteHorseTemplate } from '@/utils/horseTemplateStorage';
 import { isProUser } from '@/utils/subscription';
@@ -53,6 +53,15 @@ export default function HorsesScreen() {
       params: {
         templateData: JSON.stringify(template),
         createdAt: template.createdAt,
+      },
+    });
+  };
+
+  const handleViewTemplate = (template: HorseTemplate) => {
+    router.push({
+      pathname: '/(tabs)/horse-card-details',
+      params: {
+        templateData: JSON.stringify(template),
       },
     });
   };
@@ -154,6 +163,15 @@ export default function HorsesScreen() {
                   color={colors.primary}
                 />
                 <Text style={styles.featureText}>Document pre-run rituals and notes</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check_circle"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.featureText}>Print and share horse cards</Text>
               </View>
             </View>
 
@@ -307,6 +325,21 @@ export default function HorsesScreen() {
               <View style={styles.templateActions}>
                 <TouchableOpacity
                   style={[buttonStyles.secondaryButton, styles.templateButton]}
+                  onPress={() => handleViewTemplate(template)}
+                >
+                  <IconSymbol
+                    ios_icon_name="square.and.arrow.up"
+                    android_material_icon_name="share"
+                    size={18}
+                    color={colors.text}
+                  />
+                  <Text style={[buttonStyles.buttonText, styles.buttonTextWithIcon]}>
+                    View & Share
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[buttonStyles.secondaryButton, styles.templateButton]}
                   onPress={() => handleEditTemplate(template)}
                 >
                   <IconSymbol
@@ -350,80 +383,80 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 48 : 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'android' ? 48 : spacing.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 16,
+    marginBottom: spacing.xxl,
+    marginTop: spacing.lg,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    ...typography.h1,
     color: colors.primary,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: 16,
+    ...typography.caption,
     color: colors.textSecondary,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   addButtonText: {
     marginLeft: 0,
   },
   emptyText: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   emptySubtext: {
-    fontSize: 14,
+    ...typography.caption,
     color: colors.textSecondary,
     textAlign: 'center',
   },
   templateCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
   templateHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   templateHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     flex: 1,
   },
   templateName: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...typography.h3,
     color: colors.text,
     flex: 1,
   },
   photosSection: {
-    marginBottom: 12,
+    marginBottom: spacing.lg,
   },
   photosGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   photoItem: {
     flex: 1,
@@ -432,103 +465,101 @@ const styles = StyleSheet.create({
   photoThumbnail: {
     width: '100%',
     height: 120,
-    borderRadius: 8,
-    marginBottom: 6,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
   },
   photoLabel: {
-    fontSize: 13,
+    ...typography.small,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   remindersSection: {
-    marginBottom: 12,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.bodySemibold,
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   reminderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     backgroundColor: colors.highlight,
-    borderRadius: 6,
-    marginBottom: 4,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.xs,
   },
   reminderLabel: {
-    fontSize: 14,
+    ...typography.body,
     color: colors.text,
     flex: 1,
   },
   reminderOffset: {
-    fontSize: 13,
+    ...typography.small,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   notesSection: {
-    marginBottom: 12,
+    marginBottom: spacing.lg,
   },
   notesText: {
-    fontSize: 14,
+    ...typography.body,
     color: colors.text,
     lineHeight: 20,
     backgroundColor: colors.highlight,
-    padding: 12,
-    borderRadius: 8,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
   },
   templateActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
   templateButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: spacing.xs,
   },
   buttonTextWithIcon: {
     marginLeft: 0,
   },
   proCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.primary,
   },
   proTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    ...typography.h2,
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   proDescription: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
     lineHeight: 22,
   },
   featuresList: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   featureText: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
     flex: 1,
   },
@@ -543,32 +574,31 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   modalContent: {
     backgroundColor: colors.background,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    ...typography.h2,
     color: colors.text,
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
   modalText: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     lineHeight: 22,
   },
   modalButton: {
     width: '100%',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
 });

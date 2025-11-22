@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Platform, TextInput, Switch, Animated } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Platform, TextInput, Switch, Animated, Modal } from 'react-native';
 import { colors, commonStyles, buttonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { EventDetails, Horse } from '@/types/horse';
+import { EventDetails, Horse, Reminder } from '@/types/horse';
 import { SavedSchedule } from '@/types/savedSchedule';
 import { calculateEstimatedRunTime, calculateFiresAtTime } from '@/utils/timeCalculations';
 import { saveSchedule } from '@/utils/storage';
@@ -12,6 +12,9 @@ import HorseCard from '@/components/HorseCard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { IconSymbol } from '@/components/IconSymbol';
+import { getAllHorseTemplates } from '@/utils/horseTemplateStorage';
+import { HorseTemplate } from '@/types/horseTemplate';
+import { isProUser } from '@/utils/subscription';
 
 export default function HomeScreen() {
   const params = useLocalSearchParams();
@@ -31,8 +34,30 @@ export default function HomeScreen() {
   const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSection, setShowSaveSection] = useState(false);
+  const [showHorseTemplateModal, setShowHorseTemplateModal] = useState(false);
+  const [horseTemplates, setHorseTemplates] = useState<HorseTemplate[]>([]);
+  const [isPro, setIsPro] = useState(false);
 
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    loadProStatus();
+  }, []);
+
+  const loadProStatus = async () => {
+    try {
+      const proStatus = await isProUser();
+      setIsPro(proStatus);
+      
+      if (proStatus) {
+        const templates = await getAllHorseTemplates();
+        setHorseTemplates(templates);
+        console.log('Loaded horse templates:', templates.length);
+      }
+    } catch (error) {
+      console.error('Error loading pro status:', error);
+    }
+  };
 
   useEffect(() => {
     if (params.scheduleData) {
@@ -115,6 +140,14 @@ export default function HomeScreen() {
   }, [showSaveSection]);
 
   const handleAddHorse = () => {
+    if (isPro && horseTemplates.length > 0) {
+      setShowHorseTemplateModal(true);
+    } else {
+      addBlankHorse();
+    }
+  };
+
+  const addBlankHorse = () => {
     const newHorse: Horse = {
       id: Date.now().toString(),
       name: '',
@@ -123,6 +156,29 @@ export default function HomeScreen() {
       reminders: [],
     };
     setHorses([...horses, newHorse]);
+    setShowHorseTemplateModal(false);
+  };
+
+  const addHorseFromTemplate = (template: HorseTemplate) => {
+    const newHorse: Horse = {
+      id: Date.now().toString(),
+      name: template.name,
+      drawNumber: '',
+      estimatedRunTime: null,
+      reminders: template.reminderTemplates.map(rt => ({
+        id: Date.now().toString() + Math.random(),
+        label: rt.label,
+        offsetMinutes: rt.offsetMinutes,
+        firesAt: null,
+      })),
+    };
+    setHorses([...horses, newHorse]);
+    setShowHorseTemplateModal(false);
+    
+    Alert.alert(
+      'Horse Added',
+      `${template.name} has been added with ${template.reminderTemplates.length} pre-configured reminder${template.reminderTemplates.length !== 1 ? 's' : ''}.`
+    );
   };
 
   const handleUpdateHorse = (updatedHorse: Horse) => {
@@ -280,7 +336,9 @@ export default function HomeScreen() {
             size={24}
             color={colors.primary}
           />
-          <Text style={styles.addHorseText}>Add Horse</Text>
+          <Text style={styles.addHorseText}>
+            {isPro && horseTemplates.length > 0 ? 'Add Horse from Profile' : 'Add Horse'}
+          </Text>
         </TouchableOpacity>
 
         {!showSaveSection && (
@@ -385,6 +443,96 @@ export default function HomeScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Horse Template Selection Modal */}
+      <Modal
+        visible={showHorseTemplateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowHorseTemplateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Horse</Text>
+              <TouchableOpacity
+                onPress={() => setShowHorseTemplateModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <IconSymbol
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={28}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Select a horse profile to auto-load reminders and settings, or add a blank horse.
+            </Text>
+
+            <ScrollView style={styles.templateList} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+                style={styles.templateOption}
+                onPress={addBlankHorse}
+              >
+                <View style={styles.templateOptionLeft}>
+                  <IconSymbol
+                    ios_icon_name="plus.circle"
+                    android_material_icon_name="add_circle_outline"
+                    size={32}
+                    color={colors.textSecondary}
+                  />
+                  <View style={styles.templateOptionText}>
+                    <Text style={styles.templateOptionName}>Blank Horse</Text>
+                    <Text style={styles.templateOptionDescription}>
+                      Start with an empty horse
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron_right"
+                  size={24}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+
+              {horseTemplates.map((template) => (
+                <TouchableOpacity
+                  key={template.id}
+                  style={styles.templateOption}
+                  onPress={() => addHorseFromTemplate(template)}
+                >
+                  <View style={styles.templateOptionLeft}>
+                    <IconSymbol
+                      ios_icon_name="figure.equestrian.sports"
+                      android_material_icon_name="pets"
+                      size={32}
+                      color={colors.primary}
+                    />
+                    <View style={styles.templateOptionText}>
+                      <Text style={styles.templateOptionName}>{template.name}</Text>
+                      <Text style={styles.templateOptionDescription}>
+                        {template.reminderTemplates.length} reminder{template.reminderTemplates.length !== 1 ? 's' : ''}
+                        {template.saddlePhotoUri || template.bitPhotoUri ? ' • Tack photos' : ''}
+                        {template.preRunNotes ? ' • Notes' : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  <IconSymbol
+                    ios_icon_name="chevron.right"
+                    android_material_icon_name="chevron_right"
+                    size={24}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -522,5 +670,70 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 120,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: borderRadius.xxl,
+    borderTopRightRadius: borderRadius.xxl,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.text,
+  },
+  modalCloseButton: {
+    padding: spacing.xs,
+  },
+  modalSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+    lineHeight: 22,
+  },
+  templateList: {
+    maxHeight: 400,
+  },
+  templateOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  templateOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  templateOptionText: {
+    flex: 1,
+  },
+  templateOptionName: {
+    ...typography.bodySemibold,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  templateOptionDescription: {
+    ...typography.small,
+    color: colors.textSecondary,
   },
 });
