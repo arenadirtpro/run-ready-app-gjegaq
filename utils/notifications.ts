@@ -74,6 +74,7 @@ export const scheduleNotificationsForSchedule = async (
     let scheduledCount = 0;
     
     console.log('Scheduling alarm-like notifications for event date:', eventDate.toISOString());
+    console.log('Current time:', now.toISOString());
     
     for (const horse of schedule.horses) {
       for (const reminder of horse.reminders) {

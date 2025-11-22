@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
@@ -10,11 +10,13 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as MailComposer from 'expo-mail-composer';
 import * as SMS from 'expo-sms';
+import { captureAndShareView } from '@/utils/imageGenerator';
 
 export default function EventDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isSharing, setIsSharing] = useState(false);
+  const shareableViewRef = useRef(null);
 
   let schedule: SavedSchedule | null = null;
   try {
@@ -237,6 +239,18 @@ export default function EventDetailsScreen() {
     }
   };
 
+  const handleShareAsImage = async () => {
+    try {
+      setIsSharing(true);
+      await captureAndShareView(shareableViewRef, `${schedule!.name.replace(/\s+/g, '-')}.png`);
+    } catch (error) {
+      console.error('Error sharing as image:', error);
+      Alert.alert('Error', 'Failed to share as image. Please try again.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const handleShareViaEmail = async () => {
     try {
       setIsSharing(true);
@@ -299,6 +313,10 @@ export default function EventDetailsScreen() {
       'Choose how you would like to share this event',
       [
         {
+          text: 'Share as Image',
+          onPress: handleShareAsImage,
+        },
+        {
           text: 'Email',
           onPress: handleShareViaEmail,
         },
@@ -340,92 +358,99 @@ export default function EventDetailsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.titleSection}>
-          <Text style={styles.eventTitle}>{schedule.name}</Text>
-          <Text style={styles.eventDate}>{formatDate(schedule.eventDate)}</Text>
-          {schedule.notificationsEnabled && (
-            <View style={styles.notificationBadge}>
-              <IconSymbol
-                ios_icon_name="bell.fill"
-                android_material_icon_name="notifications"
-                size={16}
-                color={colors.primary}
-              />
-              <Text style={styles.notificationBadgeText}>Notifications Active</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Event Details</Text>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Start Time:</Text>
-            <Text style={styles.detailValue}>
-              {formatTime(schedule.eventDetails.startTime)}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Horses Per Hour:</Text>
-            <Text style={styles.detailValue}>
-              {schedule.eventDetails.horsesPerHour}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.horsesTitle}>Horses & Run Times</Text>
-
-        {schedule.horses.map((horse, index) => (
-          <View key={index} style={styles.horseCard}>
-            <View style={styles.horseHeader}>
-              <View style={styles.horseHeaderLeft}>
-                <Text style={styles.horseName}>
-                  {horse.name || `Horse #${horse.drawNumber}`}
-                </Text>
-                <View style={styles.drawBadge}>
-                  <Text style={styles.drawBadgeText}>Draw #{horse.drawNumber}</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.runTimeSection}>
-              <Text style={styles.runTimeLabel}>Estimated Run Time</Text>
-              <Text style={styles.runTimeValue}>
-                {formatTime(horse.estimatedRunTime)}
-              </Text>
-            </View>
-
-            {horse.reminders.length > 0 && (
-              <View style={styles.remindersSection}>
-                <Text style={styles.remindersSectionTitle}>Pre-Run Reminders</Text>
-                <View style={styles.remindersTable}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.tableHeaderText, styles.tableCol1]}>Task</Text>
-                    <Text style={[styles.tableHeaderText, styles.tableCol2]}>Before</Text>
-                    <Text style={[styles.tableHeaderText, styles.tableCol3]}>Alert Time</Text>
-                  </View>
-                  {horse.reminders.map((reminder, rIndex) => (
-                    <View key={rIndex} style={styles.tableRow}>
-                      <Text style={[styles.tableCell, styles.tableCol1]}>
-                        {reminder.label}
-                      </Text>
-                      <Text style={[styles.tableCell, styles.tableCol2]}>
-                        {formatOffsetLabel(reminder.offsetMinutes)}
-                      </Text>
-                      <Text style={[styles.tableCell, styles.tableCol3]}>
-                        {formatTime(reminder.firesAt)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+        {/* Shareable View - This will be captured as an image */}
+        <View ref={shareableViewRef} style={styles.shareableContainer} collapsable={false}>
+          <View style={styles.titleSection}>
+            <Text style={styles.eventTitle}>{schedule.name}</Text>
+            <Text style={styles.eventDate}>{formatDate(schedule.eventDate)}</Text>
+            {schedule.notificationsEnabled && (
+              <View style={styles.notificationBadge}>
+                <IconSymbol
+                  ios_icon_name="bell.fill"
+                  android_material_icon_name="notifications"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Text style={styles.notificationBadgeText}>Notifications Active</Text>
               </View>
             )}
           </View>
-        ))}
+
+          <View style={styles.detailsCard}>
+            <Text style={styles.sectionTitle}>Event Details</Text>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Start Time:</Text>
+              <Text style={styles.detailValue}>
+                {formatTime(schedule.eventDetails.startTime)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Horses Per Hour:</Text>
+              <Text style={styles.detailValue}>
+                {schedule.eventDetails.horsesPerHour}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.horsesTitle}>Horses & Run Times</Text>
+
+          {schedule.horses.map((horse, index) => (
+            <View key={index} style={styles.horseCard}>
+              <View style={styles.horseHeader}>
+                <View style={styles.horseHeaderLeft}>
+                  <Text style={styles.horseName}>
+                    {horse.name || `Horse #${horse.drawNumber}`}
+                  </Text>
+                  <View style={styles.drawBadge}>
+                    <Text style={styles.drawBadgeText}>Draw #{horse.drawNumber}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.runTimeSection}>
+                <Text style={styles.runTimeLabel}>Estimated Run Time</Text>
+                <Text style={styles.runTimeValue}>
+                  {formatTime(horse.estimatedRunTime)}
+                </Text>
+              </View>
+
+              {horse.reminders.length > 0 && (
+                <View style={styles.remindersSection}>
+                  <Text style={styles.remindersSectionTitle}>Pre-Run Reminders</Text>
+                  <View style={styles.remindersTable}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.tableHeaderText, styles.tableCol1]}>Task</Text>
+                      <Text style={[styles.tableHeaderText, styles.tableCol2]}>Before</Text>
+                      <Text style={[styles.tableHeaderText, styles.tableCol3]}>Alert Time</Text>
+                    </View>
+                    {horse.reminders.map((reminder, rIndex) => (
+                      <View key={rIndex} style={styles.tableRow}>
+                        <Text style={[styles.tableCell, styles.tableCol1]}>
+                          {reminder.label}
+                        </Text>
+                        <Text style={[styles.tableCell, styles.tableCol2]}>
+                          {formatOffsetLabel(reminder.offsetMinutes)}
+                        </Text>
+                        <Text style={[styles.tableCell, styles.tableCol3]}>
+                          {formatTime(reminder.firesAt)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          ))}
+
+          <View style={styles.watermark}>
+            <Text style={styles.watermarkText}>Generated by RunReady</Text>
+          </View>
+        </View>
 
         <View style={styles.actionsSection}>
           <Text style={styles.actionsSectionTitle}>Share or Print</Text>
           <Text style={styles.actionsSectionSubtitle}>
-            Share this schedule with friends, family, or your barn manager
+            Share this schedule as an image with friends, family, or your barn manager
           </Text>
 
           <View style={styles.actionButtons}>
@@ -441,7 +466,7 @@ export default function EventDetailsScreen() {
                 color={colors.background}
               />
               <Text style={[buttonStyles.buttonText, styles.actionButtonText]}>
-                Share
+                {isSharing ? 'Sharing...' : 'Share'}
               </Text>
             </TouchableOpacity>
 
@@ -502,6 +527,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 20,
     textAlign: 'center',
+  },
+  shareableContainer: {
+    backgroundColor: colors.background,
+    padding: 16,
   },
   titleSection: {
     alignItems: 'center',
@@ -667,6 +696,18 @@ const styles = StyleSheet.create({
   },
   tableCol3: {
     flex: 1.3,
+  },
+  watermark: {
+    alignItems: 'center',
+    paddingTop: 20,
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  watermarkText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
   },
   actionsSection: {
     backgroundColor: colors.cardBackground,
