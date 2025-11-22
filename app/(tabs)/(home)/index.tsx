@@ -209,7 +209,7 @@ export default function HomeScreen() {
           await scheduleNotificationsForSchedule(schedule);
           Alert.alert(
             'Schedule Saved',
-            `Your schedule "${scheduleName}" has been saved with notifications enabled!`,
+            `Your schedule "${scheduleName}" has been saved!\n\nAlarm-style notifications have been set for all reminders. Make sure your device volume is up and Do Not Disturb is off to hear them.`,
             [
               {
                 text: 'OK',
@@ -219,7 +219,6 @@ export default function HomeScreen() {
                   setEventDate(new Date());
                   setEditingScheduleId(null);
                   setOriginalCreatedAt(null);
-                  // Navigate to Saved Events page
                   router.push('/profile');
                 },
               },
@@ -228,7 +227,7 @@ export default function HomeScreen() {
         } else {
           Alert.alert(
             'Schedule Saved',
-            `Your schedule "${scheduleName}" has been saved, but notification permissions were not granted.`,
+            `Your schedule "${scheduleName}" has been saved, but notification permissions were not granted. You can enable them in your device settings.`,
             [
               {
                 text: 'OK',
@@ -238,7 +237,6 @@ export default function HomeScreen() {
                   setEventDate(new Date());
                   setEditingScheduleId(null);
                   setOriginalCreatedAt(null);
-                  // Navigate to Saved Events page
                   router.push('/profile');
                 },
               },
@@ -258,7 +256,6 @@ export default function HomeScreen() {
                 setEventDate(new Date());
                 setEditingScheduleId(null);
                 setOriginalCreatedAt(null);
-                // Navigate to Saved Events page
                 router.push('/profile');
               },
             },
@@ -323,11 +320,9 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Extra padding for floating tab bar */}
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* Save Schedule Modal */}
       <Modal
         visible={saveModalVisible}
         transparent
@@ -369,9 +364,9 @@ export default function HomeScreen() {
 
             <View style={styles.notificationToggle}>
               <View style={styles.notificationToggleText}>
-                <Text style={styles.modalLabel}>Enable Notifications</Text>
+                <Text style={styles.modalLabel}>Enable Alarm-Style Notifications</Text>
                 <Text style={styles.modalSubtext}>
-                  Receive alerts for pre-run activities
+                  Receive loud, attention-grabbing alerts for pre-run activities
                 </Text>
               </View>
               <Switch
@@ -381,6 +376,14 @@ export default function HomeScreen() {
                 thumbColor={colors.background}
               />
             </View>
+
+            {notificationsEnabled && (
+              <View style={styles.notificationInfo}>
+                <Text style={styles.notificationInfoText}>
+                  💡 Tip: For best results, keep your device volume up and disable Do Not Disturb mode during your event.
+                </Text>
+              </View>
+            )}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -502,12 +505,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
     paddingVertical: 8,
   },
   notificationToggleText: {
     flex: 1,
     marginRight: 16,
+  },
+  notificationInfo: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+  },
+  notificationInfoText: {
+    fontSize: 13,
+    color: colors.primary,
+    lineHeight: 18,
   },
   modalButtons: {
     flexDirection: 'row',

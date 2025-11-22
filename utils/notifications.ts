@@ -3,7 +3,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { SavedSchedule } from '@/types/savedSchedule';
 
-// Set notification handler
+// Set notification handler with alarm-like behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -27,13 +27,26 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
       return false;
     }
     
-    // Set up notification channel for Android
+    // Set up notification channel for Android with alarm-like properties
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('runready-reminders', {
-        name: 'RunReady Reminders',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
+      await Notifications.setNotificationChannelAsync('runready-alarms', {
+        name: 'RunReady Alarms',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 250, 500],
         sound: 'default',
+        enableLights: true,
+        enableVibrate: true,
+        showBadge: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: false,
+        audioAttributes: {
+          usage: Notifications.AndroidAudioUsage.ALARM,
+          contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+          flags: {
+            enforceAudibility: true,
+            requestAudibility: true,
+          },
+        },
       });
     }
     
@@ -60,7 +73,7 @@ export const scheduleNotificationsForSchedule = async (
     const eventDate = new Date(schedule.eventDate);
     let scheduledCount = 0;
     
-    console.log('Scheduling notifications for event date:', eventDate.toISOString());
+    console.log('Scheduling alarm-like notifications for event date:', eventDate.toISOString());
     
     for (const horse of schedule.horses) {
       for (const reminder of horse.reminders) {
@@ -75,11 +88,11 @@ export const scheduleNotificationsForSchedule = async (
             eventDate.getDate(),
             reminderTime.getHours(),
             reminderTime.getMinutes(),
-            0, // seconds
-            0  // milliseconds
+            0,
+            0
           );
           
-          console.log(`Reminder for ${horse.name} - ${reminder.label}:`);
+          console.log(`Alarm for ${horse.name} - ${reminder.label}:`);
           console.log(`  Event date: ${eventDate.toISOString()}`);
           console.log(`  Reminder time: ${reminderTime.toISOString()}`);
           console.log(`  Trigger date: ${triggerDate.toISOString()}`);
@@ -90,7 +103,7 @@ export const scheduleNotificationsForSchedule = async (
           if (triggerDate > now) {
             const notificationId = await Notifications.scheduleNotificationAsync({
               content: {
-                title: `${horse.name} - ${reminder.label}`,
+                title: `⏰ ${horse.name} - ${reminder.label}`,
                 body: `Time for ${reminder.label}. ${horse.name} runs at ${formatTime(horse.estimatedRunTime)}.`,
                 data: {
                   scheduleId: schedule.id,
@@ -98,12 +111,20 @@ export const scheduleNotificationsForSchedule = async (
                   reminderId: reminder.id,
                 },
                 sound: 'default',
+                priority: Platform.OS === 'android' 
+                  ? Notifications.AndroidNotificationPriority.MAX 
+                  : undefined,
+                badge: 1,
+                categoryIdentifier: 'runready-reminder',
               },
-              trigger: triggerDate,
+              trigger: {
+                channelId: Platform.OS === 'android' ? 'runready-alarms' : undefined,
+                date: triggerDate,
+              },
             });
             
             scheduledCount++;
-            console.log(`✓ Scheduled notification ${notificationId} for ${horse.name} - ${reminder.label} at ${triggerDate.toLocaleString()}`);
+            console.log(`✓ Scheduled alarm notification ${notificationId} for ${horse.name} - ${reminder.label} at ${triggerDate.toLocaleString()}`);
           } else {
             console.log(`✗ Skipping past notification for ${horse.name} - ${reminder.label} (trigger: ${triggerDate.toLocaleString()}, now: ${now.toLocaleString()})`);
           }
@@ -111,7 +132,7 @@ export const scheduleNotificationsForSchedule = async (
       }
     }
     
-    console.log(`Successfully scheduled ${scheduledCount} notifications for schedule ${schedule.id}`);
+    console.log(`Successfully scheduled ${scheduledCount} alarm-like notifications for schedule ${schedule.id}`);
   } catch (error) {
     console.error('Error scheduling notifications:', error);
     throw error;
