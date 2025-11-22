@@ -37,6 +37,20 @@ export default function ProfileScreen() {
     }, [])
   );
 
+  const handleViewSchedule = (schedule: SavedSchedule) => {
+    try {
+      router.push({
+        pathname: '/(tabs)/event-details',
+        params: {
+          scheduleData: JSON.stringify(schedule),
+        },
+      });
+    } catch (error) {
+      console.error('Error navigating to event details:', error);
+      Alert.alert('Error', 'Failed to load event details. Please try again.');
+    }
+  };
+
   const handleEditSchedule = (schedule: SavedSchedule) => {
     try {
       router.push({
@@ -106,7 +120,7 @@ export default function ProfileScreen() {
       const body = `${feedbackType === 'feedback' ? 'Feedback' : 'Feature Request'}:\n\n${feedbackText}\n\n---\nSent from RunReady App`;
 
       const result = await MailComposer.composeAsync({
-        recipients: ['feedback@runreadyapp.com'], // Replace with your actual email
+        recipients: ['feedback@runreadyapp.com'],
         subject: subject,
         body: body,
       });
@@ -164,7 +178,12 @@ export default function ProfileScreen() {
           </View>
         ) : (
           schedules.map((schedule) => (
-            <View key={schedule.id} style={styles.scheduleCard}>
+            <TouchableOpacity
+              key={schedule.id}
+              style={styles.scheduleCard}
+              onPress={() => handleViewSchedule(schedule)}
+              activeOpacity={0.7}
+            >
               <View style={styles.scheduleHeader}>
                 <View style={styles.scheduleHeaderLeft}>
                   <Text style={styles.scheduleName}>{schedule.name}</Text>
@@ -215,10 +234,23 @@ export default function ProfileScreen() {
                 </View>
               )}
 
+              <View style={styles.tapToViewHint}>
+                <IconSymbol
+                  ios_icon_name="arrow.right.circle.fill"
+                  android_material_icon_name="arrow_forward"
+                  size={18}
+                  color={colors.primary}
+                />
+                <Text style={styles.tapToViewText}>Tap to view full details</Text>
+              </View>
+
               <View style={styles.scheduleActions}>
                 <TouchableOpacity
                   style={[buttonStyles.secondaryButton, styles.scheduleButton]}
-                  onPress={() => handleEditSchedule(schedule)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleEditSchedule(schedule);
+                  }}
                 >
                   <IconSymbol
                     ios_icon_name="pencil"
@@ -233,7 +265,10 @@ export default function ProfileScreen() {
 
                 <TouchableOpacity
                   style={[buttonStyles.dangerButton, styles.scheduleButton]}
-                  onPress={() => handleDeleteSchedule(schedule)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeleteSchedule(schedule);
+                  }}
                 >
                   <IconSymbol
                     ios_icon_name="trash.fill"
@@ -246,7 +281,7 @@ export default function ProfileScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
 
@@ -464,7 +499,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   horsesSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   horsesSectionTitle: {
     fontSize: 15,
@@ -488,6 +523,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   horseRunTime: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  tapToViewHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    marginBottom: 12,
+    gap: 6,
+  },
+  tapToViewText: {
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
