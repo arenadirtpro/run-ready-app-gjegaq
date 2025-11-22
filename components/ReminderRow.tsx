@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { Reminder } from '@/types/horse';
 import { formatTime, offsetOptions } from '@/utils/timeCalculations';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -27,8 +27,8 @@ export default function ReminderRow({ reminder, onUpdateReminder, onDeleteRemind
   const selectedOffset = offsetOptions.find(opt => opt.value === reminder.offsetMinutes);
 
   return (
-    <View style={styles.reminderRow}>
-      <View style={styles.reminderContent}>
+    <View style={styles.reminderContainer}>
+      <View style={styles.reminderRow}>
         <TextInput
           style={styles.labelInput}
           value={reminder.label}
@@ -44,32 +44,63 @@ export default function ReminderRow({ reminder, onUpdateReminder, onDeleteRemind
           <Text style={styles.offsetButtonText}>
             {selectedOffset?.label || '1 hr'}
           </Text>
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="expand_more"
+            size={16}
+            color={colors.primary}
+          />
         </TouchableOpacity>
-
-        <View style={styles.firesAtContainer}>
-          <Text style={styles.firesAtLabel}>Fires At:</Text>
-          <Text style={styles.firesAtTime}>{formatTime(reminder.firesAt)}</Text>
-        </View>
 
         <TouchableOpacity onPress={onDeleteReminder} style={styles.deleteButton}>
           <IconSymbol
             ios_icon_name="trash.fill"
             android_material_icon_name="delete"
             size={20}
-            color={colors.accent}
+            color={colors.danger}
           />
         </TouchableOpacity>
       </View>
+
+      {reminder.firesAt && (
+        <View style={styles.firesAtContainer}>
+          <IconSymbol
+            ios_icon_name="alarm.fill"
+            android_material_icon_name="alarm"
+            size={14}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.firesAtText}>
+            Alert at {formatTime(reminder.firesAt)}
+          </Text>
+        </View>
+      )}
 
       {showOffsetPicker && (
         <View style={styles.offsetPicker}>
           {offsetOptions.map((option, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.offsetOption}
+              style={[
+                styles.offsetOption,
+                option.value === reminder.offsetMinutes && styles.offsetOptionSelected,
+              ]}
               onPress={() => handleOffsetSelect(option.value)}
             >
-              <Text style={styles.offsetOptionText}>{option.label}</Text>
+              <Text style={[
+                styles.offsetOptionText,
+                option.value === reminder.offsetMinutes && styles.offsetOptionTextSelected,
+              ]}>
+                {option.label}
+              </Text>
+              {option.value === reminder.offsetMinutes && (
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check_circle"
+                  size={20}
+                  color={colors.primary}
+                />
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -79,69 +110,81 @@ export default function ReminderRow({ reminder, onUpdateReminder, onDeleteRemind
 }
 
 const styles = StyleSheet.create({
-  reminderRow: {
-    marginBottom: 8,
+  reminderContainer: {
+    marginBottom: spacing.md,
   },
-  reminderContent: {
+  reminderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   labelInput: {
-    flex: 2,
-    backgroundColor: colors.highlight,
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    flex: 1,
+    backgroundColor: colors.inputBackground,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     fontSize: 14,
     color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   offsetButton: {
-    flex: 1,
-    backgroundColor: colors.secondary,
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   offsetButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  firesAtContainer: {
-    flex: 1.5,
-    alignItems: 'center',
-  },
-  firesAtLabel: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  firesAtTime: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
+    ...typography.captionMedium,
+    color: colors.primary,
   },
   deleteButton: {
-    padding: 4,
+    padding: spacing.xs,
+  },
+  firesAtContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingLeft: spacing.md,
+  },
+  firesAtText: {
+    ...typography.small,
+    color: colors.textSecondary,
   },
   offsetPicker: {
     backgroundColor: colors.card,
-    borderRadius: 8,
-    marginTop: 8,
-    padding: 8,
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+    padding: spacing.xs,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
     elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   offsetOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.highlight,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+  },
+  offsetOptionSelected: {
+    backgroundColor: colors.primaryLight,
   },
   offsetOptionText: {
-    fontSize: 14,
+    ...typography.body,
     color: colors.text,
+  },
+  offsetOptionTextSelected: {
+    ...typography.bodySemibold,
+    color: colors.primary,
   },
 });

@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '@/styles/commonStyles';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { Stack, useRouter, usePathname } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -44,13 +44,19 @@ export default function TabLayout() {
             isActive('/(tabs)/(home)') && styles.tabButtonActive,
           ]}
           onPress={handleNewEventPress}
+          activeOpacity={0.7}
         >
-          <IconSymbol
-            ios_icon_name="plus.circle.fill"
-            android_material_icon_name="add_circle"
-            size={24}
-            color={isActive('/(tabs)/(home)') ? colors.background : colors.text}
-          />
+          <View style={[
+            styles.iconContainer,
+            isActive('/(tabs)/(home)') && styles.iconContainerActive,
+          ]}>
+            <IconSymbol
+              ios_icon_name="plus.circle.fill"
+              android_material_icon_name="add_circle"
+              size={24}
+              color={isActive('/(tabs)/(home)') ? colors.primary : colors.textSecondary}
+            />
+          </View>
           <Text
             style={[
               styles.tabButtonText,
@@ -67,13 +73,19 @@ export default function TabLayout() {
             isActive('/profile') && styles.tabButtonActive,
           ]}
           onPress={handleSavedEventsPress}
+          activeOpacity={0.7}
         >
-          <IconSymbol
-            ios_icon_name="calendar"
-            android_material_icon_name="event"
-            size={24}
-            color={isActive('/profile') ? colors.background : colors.text}
-          />
+          <View style={[
+            styles.iconContainer,
+            isActive('/profile') && styles.iconContainerActive,
+          ]}>
+            <IconSymbol
+              ios_icon_name="calendar"
+              android_material_icon_name="event"
+              size={24}
+              color={isActive('/profile') ? colors.primary : colors.textSecondary}
+            />
+          </View>
           <Text
             style={[
               styles.tabButtonText,
@@ -90,13 +102,19 @@ export default function TabLayout() {
             isActive('/horses') && styles.tabButtonActive,
           ]}
           onPress={handleHorsesPress}
+          activeOpacity={0.7}
         >
-          <IconSymbol
-            ios_icon_name="figure.equestrian.sports"
-            android_material_icon_name="pets"
-            size={24}
-            color={isActive('/horses') ? colors.background : colors.text}
-          />
+          <View style={[
+            styles.iconContainer,
+            isActive('/horses') && styles.iconContainerActive,
+          ]}>
+            <IconSymbol
+              ios_icon_name="figure.equestrian.sports"
+              android_material_icon_name="pets"
+              size={24}
+              color={isActive('/horses') ? colors.primary : colors.textSecondary}
+            />
+          </View>
           <Text
             style={[
               styles.tabButtonText,
@@ -114,39 +132,51 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundSecondary,
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 8,
-    paddingTop: 8,
-    paddingHorizontal: 8,
-    gap: 8,
+    borderTopColor: colors.borderLight,
+    paddingBottom: Platform.OS === 'ios' ? 0 : spacing.sm,
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xs,
+    boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.04)',
+    elevation: 8,
   },
   tabButton: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: borderRadius.md,
     backgroundColor: 'transparent',
   },
   tabButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  iconContainerActive: {
+    backgroundColor: colors.card,
   },
   tabButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 4,
+    ...typography.small,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   tabButtonTextActive: {
-    color: colors.background,
+    ...typography.smallMedium,
+    color: colors.primary,
   },
 });

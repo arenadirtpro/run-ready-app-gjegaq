@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Platform, StyleSheet, Modal } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { EventDetails } from '@/types/horse';
+import { IconSymbol } from '@/components/IconSymbol';
 
 interface EventDetailsCardProps {
   eventDetails: EventDetails;
@@ -15,44 +16,34 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
   const [tempTime, setTempTime] = useState<Date>(new Date());
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
-    console.log('Time picker event:', event.type, 'Selected date:', selectedDate);
-    
     if (Platform.OS === 'android') {
       setShowTimePicker(false);
       
       if (event.type === 'set' && selectedDate) {
-        console.log('Setting new start time (Android):', selectedDate);
         onUpdateEventDetails({ ...eventDetails, startTime: selectedDate });
-      } else {
-        console.log('Time picker dismissed (Android)');
       }
     } else {
       if (selectedDate) {
-        console.log('Updating temp time (iOS):', selectedDate);
         setTempTime(selectedDate);
       }
     }
   };
 
   const handleConfirmTime = () => {
-    console.log('Confirming time selection:', tempTime);
     onUpdateEventDetails({ ...eventDetails, startTime: tempTime });
     setShowTimePicker(false);
   };
 
   const handleCancelTime = () => {
-    console.log('Cancelling time selection');
     setShowTimePicker(false);
   };
 
   const handleOpenPicker = () => {
-    console.log('Opening time picker');
     setTempTime(eventDetails.startTime || new Date());
     setShowTimePicker(true);
   };
 
   const handleHorsesPerHourChange = (text: string) => {
-    console.log('Horses per hour changed:', text);
     onUpdateEventDetails({ ...eventDetails, horsesPerHour: text });
   };
 
@@ -62,7 +53,6 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
     const dateObj = date instanceof Date ? date : new Date(date);
     
     if (isNaN(dateObj.getTime())) {
-      console.error('Invalid date:', date);
       return 'Select Time';
     }
     
@@ -75,16 +65,24 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
 
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>Event Start Time</Text>
-      <TouchableOpacity
-        style={styles.timeButton}
-        onPress={handleOpenPicker}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.timeButtonText}>
-          {formatTimeDisplay(eventDetails.startTime)}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Event Start Time</Text>
+        <TouchableOpacity
+          style={styles.timeButton}
+          onPress={handleOpenPicker}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            ios_icon_name="clock.fill"
+            android_material_icon_name="schedule"
+            size={20}
+            color={eventDetails.startTime ? colors.primary : colors.textSecondary}
+          />
+          <Text style={[styles.timeButtonText, !eventDetails.startTime && styles.placeholderText]}>
+            {formatTimeDisplay(eventDetails.startTime)}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {Platform.OS === 'ios' ? (
         <Modal
@@ -129,15 +127,27 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
         )
       )}
 
-      <Text style={styles.label}>Horses Per Hour</Text>
-      <TextInput
-        style={styles.input}
-        value={eventDetails.horsesPerHour}
-        onChangeText={handleHorsesPerHourChange}
-        keyboardType="numeric"
-        placeholder="e.g., 12"
-        placeholderTextColor={colors.textSecondary}
-      />
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Horses Per Hour</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={eventDetails.horsesPerHour}
+            onChangeText={handleHorsesPerHourChange}
+            keyboardType="numeric"
+            placeholder="e.g., 12"
+            placeholderTextColor={colors.textSecondary}
+          />
+          <View style={styles.inputIcon}>
+            <IconSymbol
+              ios_icon_name="figure.equestrian.sports"
+              android_material_icon_name="pets"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -145,41 +155,62 @@ export default function EventDetailsCard({ eventDetails, onUpdateEventDetails }:
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  inputGroup: {
+    marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
+    ...typography.captionMedium,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   timeButton: {
-    backgroundColor: colors.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: colors.secondary,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 16,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
   },
   timeButtonText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  placeholderText: {
+    color: colors.textSecondary,
+  },
+  inputContainer: {
+    position: 'relative',
+  },
+  input: {
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingRight: 48,
     fontSize: 16,
     color: colors.text,
   },
-  input: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: 12,
+  inputIcon: {
+    position: 'absolute',
+    right: spacing.lg,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -188,35 +219,33 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: borderRadius.xxl,
+    borderTopRightRadius: borderRadius.xxl,
     paddingBottom: 34,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    ...typography.h4,
     color: colors.text,
   },
   modalButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   cancelButtonText: {
-    fontSize: 17,
+    ...typography.body,
     color: colors.textSecondary,
   },
   confirmButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
+    ...typography.bodySemibold,
     color: colors.primary,
   },
 });

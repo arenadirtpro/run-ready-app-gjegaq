@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, Switch } from 'react-native';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { EventDetails, Horse, Reminder } from '@/types/horse';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput, Switch, Animated } from 'react-native';
+import { colors, commonStyles, buttonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { EventDetails, Horse } from '@/types/horse';
 import { SavedSchedule } from '@/types/savedSchedule';
 import { calculateEstimatedRunTime, calculateFiresAtTime } from '@/utils/timeCalculations';
 import { saveSchedule } from '@/utils/storage';
@@ -11,6 +11,7 @@ import EventDetailsCard from '@/components/EventDetailsCard';
 import HorseCard from '@/components/HorseCard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HomeScreen() {
   const params = useLocalSearchParams();
@@ -22,21 +23,22 @@ export default function HomeScreen() {
   });
 
   const [horses, setHorses] = useState<Horse[]>([]);
-  const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [scheduleName, setScheduleName] = useState('');
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveSection, setShowSaveSection] = useState(false);
 
-  // Load schedule if editing
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (params.scheduleData) {
       try {
         const schedule: SavedSchedule = JSON.parse(params.scheduleData as string);
         
-        // Convert date strings back to Date objects
         const parsedEventDetails: EventDetails = {
           ...schedule.eventDetails,
           startTime: schedule.eventDetails.startTime ? new Date(schedule.eventDetails.startTime) : null,
@@ -58,29 +60,22 @@ export default function HomeScreen() {
         setNotificationsEnabled(schedule.notificationsEnabled);
         setEditingScheduleId(schedule.id);
         setOriginalCreatedAt(schedule.createdAt);
+        setShowSaveSection(true);
         console.log('Loaded schedule for editing:', schedule.id);
       } catch (error) {
         console.error('Error loading schedule:', error);
-        Alert.alert('Error', 'Failed to load schedule for editing. Please try again.');
+        Alert.alert('Error', 'Failed to load schedule for editing.');
       }
     }
   }, [params.scheduleData]);
 
-  // Recalculate run times when event details change
   useEffect(() => {
-    console.log('Event details changed:', {
-      startTime: eventDetails.startTime,
-      horsesPerHour: eventDetails.horsesPerHour,
-    });
-
     if (eventDetails.startTime && eventDetails.horsesPerHour) {
       const horsesPerHour = parseFloat(eventDetails.horsesPerHour);
-      console.log('Parsed horses per hour:', horsesPerHour);
       
       if (horsesPerHour > 0) {
         const updatedHorses = horses.map(horse => {
           const drawNumber = parseInt(horse.drawNumber);
-          console.log(`Processing horse ${horse.name}, draw number: ${drawNumber}`);
           
           if (drawNumber > 0) {
             const estimatedRunTime = calculateEstimatedRunTime(
@@ -88,9 +83,7 @@ export default function HomeScreen() {
               horsesPerHour,
               drawNumber
             );
-            console.log(`Calculated run time for ${horse.name}:`, estimatedRunTime);
             
-            // Update reminder fire times
             const updatedReminders = horse.reminders.map(reminder => ({
               ...reminder,
               firesAt: calculateFiresAtTime(estimatedRunTime, reminder.offsetMinutes),
@@ -109,6 +102,18 @@ export default function HomeScreen() {
     }
   }, [eventDetails.startTime, eventDetails.horsesPerHour]);
 
+  useEffect(() => {
+    if (showSaveSection) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      fadeAnim.setValue(0);
+    }
+  }, [showSaveSection]);
+
   const handleAddHorse = () => {
     const newHorse: Horse = {
       id: Date.now().toString(),
@@ -124,21 +129,12 @@ export default function HomeScreen() {
     const horsesPerHour = parseFloat(eventDetails.horsesPerHour);
     const drawNumber = parseInt(updatedHorse.drawNumber);
     
-    console.log('Updating horse:', {
-      name: updatedHorse.name,
-      drawNumber,
-      horsesPerHour,
-      startTime: eventDetails.startTime,
-    });
-    
     if (eventDetails.startTime && horsesPerHour > 0 && drawNumber > 0) {
       const estimatedRunTime = calculateEstimatedRunTime(
         eventDetails.startTime,
         horsesPerHour,
         drawNumber
       );
-      
-      console.log('Calculated estimated run time:', estimatedRunTime);
       
       const updatedReminders = updatedHorse.reminders.map(reminder => ({
         ...reminder,
@@ -159,8 +155,7 @@ export default function HomeScreen() {
     setHorses(horses.filter(h => h.id !== horseId));
   };
 
-  const handleSaveSchedule = () => {
-    // Validate that we have at least event details
+  const handlePrepareToSave = () => {
     if (!eventDetails.startTime || !eventDetails.horsesPerHour) {
       Alert.alert(
         'Missing Information',
@@ -170,8 +165,7 @@ export default function HomeScreen() {
       return;
     }
 
-    // Show save modal
-    setSaveModalVisible(true);
+    setShowSaveSection(true);
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -181,11 +175,13 @@ export default function HomeScreen() {
     setShowDatePicker(false);
   };
 
-  const handleConfirmSave = async () => {
+  const handleSaveSchedule = async () => {
     if (!scheduleName.trim()) {
       Alert.alert('Missing Name', 'Please enter a name for this schedule.', [{ text: 'OK' }]);
       return;
     }
+
+    setIsSaving(true);
 
     try {
       const now = new Date().toISOString();
@@ -202,72 +198,41 @@ export default function HomeScreen() {
 
       await saveSchedule(schedule);
 
-      // Request notification permissions and schedule notifications if enabled
       if (notificationsEnabled) {
         const hasPermission = await requestNotificationPermissions();
         if (hasPermission) {
           await scheduleNotificationsForSchedule(schedule);
-          Alert.alert(
-            'Schedule Saved',
-            `Your schedule "${scheduleName}" has been saved with notifications enabled!`,
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setSaveModalVisible(false);
-                  setScheduleName('');
-                  setEventDate(new Date());
-                  setEditingScheduleId(null);
-                  setOriginalCreatedAt(null);
-                  // Navigate to Saved Events page
-                  router.push('/profile');
-                },
-              },
-            ]
-          );
-        } else {
-          Alert.alert(
-            'Schedule Saved',
-            `Your schedule "${scheduleName}" has been saved, but notification permissions were not granted.`,
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setSaveModalVisible(false);
-                  setScheduleName('');
-                  setEventDate(new Date());
-                  setEditingScheduleId(null);
-                  setOriginalCreatedAt(null);
-                  // Navigate to Saved Events page
-                  router.push('/profile');
-                },
-              },
-            ]
-          );
         }
-      } else {
-        Alert.alert(
-          'Schedule Saved',
-          `Your schedule "${scheduleName}" has been saved successfully!`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setSaveModalVisible(false);
-                setScheduleName('');
-                setEventDate(new Date());
-                setEditingScheduleId(null);
-                setOriginalCreatedAt(null);
-                // Navigate to Saved Events page
-                router.push('/profile');
-              },
-            },
-          ]
-        );
       }
+
+      Alert.alert(
+        '✓ Saved',
+        `Your schedule "${scheduleName}" has been saved successfully!`,
+        [
+          {
+            text: 'View Saved Events',
+            onPress: () => router.push('/profile'),
+          },
+          {
+            text: 'Create Another',
+            onPress: () => {
+              setEventDetails({ startTime: null, horsesPerHour: '' });
+              setHorses([]);
+              setScheduleName('');
+              setEventDate(new Date());
+              setNotificationsEnabled(true);
+              setEditingScheduleId(null);
+              setOriginalCreatedAt(null);
+              setShowSaveSection(false);
+            },
+          },
+        ]
+      );
     } catch (error) {
       console.error('Error saving schedule:', error);
-      Alert.alert('Error', 'Failed to save schedule. Please try again.', [{ text: 'OK' }]);
+      Alert.alert('Error', 'Failed to save schedule. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -288,7 +253,7 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.appTitle}>RunReady</Text>
-          <Text style={styles.appSubtitle}>Run Time Estimates + Notifications</Text>
+          <Text style={styles.appSubtitle}>Precise run time estimates for your horses</Text>
         </View>
 
         <EventDetailsCard
@@ -296,7 +261,7 @@ export default function HomeScreen() {
           onUpdateEventDetails={setEventDetails}
         />
 
-        {horses.map((horse) => (
+        {horses.map((horse, index) => (
           <HorseCard
             key={horse.id}
             horse={horse}
@@ -305,107 +270,121 @@ export default function HomeScreen() {
           />
         ))}
 
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[buttonStyles.secondaryButton, styles.actionButton]}
-            onPress={handleAddHorse}
-          >
-            <Text style={buttonStyles.buttonText}>+ Add Horse</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addHorseButton}
+          onPress={handleAddHorse}
+        >
+          <IconSymbol
+            ios_icon_name="plus.circle.fill"
+            android_material_icon_name="add_circle"
+            size={24}
+            color={colors.primary}
+          />
+          <Text style={styles.addHorseText}>Add Horse</Text>
+        </TouchableOpacity>
 
+        {!showSaveSection && (
           <TouchableOpacity
-            style={[buttonStyles.primaryButton, styles.actionButton]}
-            onPress={handleSaveSchedule}
+            style={[buttonStyles.primaryButton, styles.continueButton]}
+            onPress={handlePrepareToSave}
           >
             <Text style={buttonStyles.buttonText}>
-              {editingScheduleId ? 'Update Schedule' : 'Save Schedule'}
+              {editingScheduleId ? 'Continue to Update' : 'Continue to Save'}
             </Text>
           </TouchableOpacity>
-        </View>
+        )}
 
-        {/* Extra padding for floating tab bar */}
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+        {showSaveSection && (
+          <Animated.View style={[styles.saveSection, { opacity: fadeAnim }]}>
+            <View style={styles.saveSectionHeader}>
+              <Text style={styles.saveSectionTitle}>Schedule Details</Text>
+              <TouchableOpacity
+                onPress={() => setShowSaveSection(false)}
+                style={styles.collapseSaveButton}
+              >
+                <IconSymbol
+                  ios_icon_name="chevron.up"
+                  android_material_icon_name="expand_less"
+                  size={24}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
 
-      {/* Save Schedule Modal */}
-      <Modal
-        visible={saveModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSaveModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingScheduleId ? 'Update Schedule' : 'Save Schedule'}
-            </Text>
-
-            <Text style={styles.modalLabel}>Schedule Name</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={scheduleName}
-              onChangeText={setScheduleName}
-              placeholder="e.g., Saturday Barrel Race"
-              placeholderTextColor={colors.textSecondary}
-            />
-
-            <Text style={styles.modalLabel}>Event Date</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.dateButtonText}>{formatDateDisplay(eventDate)}</Text>
-            </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={eventDate}
-                mode="date"
-                display="inline"
-                onChange={handleDateChange}
-                minimumDate={new Date()}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Schedule Name</Text>
+              <TextInput
+                style={styles.input}
+                value={scheduleName}
+                onChangeText={setScheduleName}
+                placeholder="e.g., Saturday Barrel Race"
+                placeholderTextColor={colors.textSecondary}
               />
-            )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Event Date</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <IconSymbol
+                  ios_icon_name="calendar"
+                  android_material_icon_name="event"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.dateButtonText}>{formatDateDisplay(eventDate)}</Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={eventDate}
+                  mode="date"
+                  display="inline"
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                />
+              )}
+            </View>
 
             <View style={styles.notificationToggle}>
-              <View style={styles.notificationToggleText}>
-                <Text style={styles.modalLabel}>Enable Notifications</Text>
-                <Text style={styles.modalSubtext}>
-                  Receive alerts for pre-run activities
-                </Text>
+              <View style={styles.notificationToggleLeft}>
+                <IconSymbol
+                  ios_icon_name="bell.badge.fill"
+                  android_material_icon_name="notifications_active"
+                  size={24}
+                  color={notificationsEnabled ? colors.primary : colors.textSecondary}
+                />
+                <View style={styles.notificationToggleText}>
+                  <Text style={styles.notificationToggleTitle}>Notifications</Text>
+                  <Text style={styles.notificationToggleSubtitle}>
+                    Get alerts for pre-run activities
+                  </Text>
+                </View>
               </View>
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.background}
+                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                thumbColor={notificationsEnabled ? colors.primary : colors.backgroundSecondary}
               />
             </View>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[buttonStyles.secondaryButton, styles.modalButton]}
-                onPress={() => {
-                  setSaveModalVisible(false);
-                  setScheduleName('');
-                  setEventDate(new Date());
-                }}
-              >
-                <Text style={buttonStyles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[buttonStyles.primaryButton, styles.saveButton, isSaving && styles.saveButtonDisabled]}
+              onPress={handleSaveSchedule}
+              disabled={isSaving}
+            >
+              <Text style={buttonStyles.buttonText}>
+                {isSaving ? 'Saving...' : editingScheduleId ? 'Update Schedule' : 'Save Schedule'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
-              <TouchableOpacity
-                style={[buttonStyles.primaryButton, styles.modalButton]}
-                onPress={handleConfirmSave}
-              >
-                <Text style={buttonStyles.buttonText}>
-                  {editingScheduleId ? 'Update' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        <View style={styles.bottomPadding} />
+      </ScrollView>
     </View>
   );
 }
@@ -415,105 +394,133 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.xxl,
+    paddingTop: spacing.md,
   },
   appTitle: {
-    fontSize: 32,
-    fontWeight: '800',
+    ...typography.h1,
     color: colors.primary,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   appSubtitle: {
-    fontSize: 16,
+    ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  actionsContainer: {
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  actionButton: {
-    width: '100%',
-  },
-  bottomPadding: {
-    height: 120,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)',
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 20,
     textAlign: 'center',
   },
-  modalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
+  addHorseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
   },
-  modalSubtext: {
-    fontSize: 14,
+  addHorseText: {
+    ...typography.bodySemibold,
+    color: colors.primary,
+    marginLeft: spacing.sm,
+  },
+  continueButton: {
+    marginTop: spacing.md,
+  },
+  saveSection: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    marginTop: spacing.lg,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+    elevation: 3,
+  },
+  saveSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  saveSectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  collapseSaveButton: {
+    padding: spacing.xs,
+  },
+  inputGroup: {
+    marginBottom: spacing.xl,
+  },
+  inputLabel: {
+    ...typography.captionMedium,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  modalInput: {
+  input: {
     backgroundColor: colors.inputBackground,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     fontSize: 16,
     color: colors.text,
-    marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.border,
   },
   dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.inputBackground,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: spacing.md,
   },
   dateButtonText: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
   },
   notificationToggle: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingVertical: 8,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  notificationToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.md,
   },
   notificationToggleText: {
     flex: 1,
-    marginRight: 16,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
+  notificationToggleTitle: {
+    ...typography.bodySemibold,
+    color: colors.text,
+    marginBottom: 2,
   },
-  modalButton: {
-    flex: 1,
+  notificationToggleSubtitle: {
+    ...typography.small,
+    color: colors.textSecondary,
+  },
+  saveButton: {
+    marginTop: spacing.md,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  bottomPadding: {
+    height: 120,
   },
 });
