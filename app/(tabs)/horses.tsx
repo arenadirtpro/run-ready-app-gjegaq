@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Modal, Image } from 'react-native';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { HorseTemplate, ReminderTemplate, IncentiveRegistration } from '@/types/horseTemplate';
-import { getAllHorseTemplates, saveHorseTemplate, deleteHorseTemplate } from '@/utils/horseTemplateStorage';
+import { HorseTemplate } from '@/types/horseTemplate';
+import { getAllHorseTemplates, deleteHorseTemplate } from '@/utils/horseTemplateStorage';
 import { isProUser } from '@/utils/subscription';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -44,21 +44,22 @@ export default function HorsesScreen() {
       return;
     }
     
-    router.push('/horses/edit');
+    router.push('/(tabs)/horse-editor');
   };
 
   const handleEditTemplate = (template: HorseTemplate) => {
     router.push({
-      pathname: '/horses/edit',
+      pathname: '/(tabs)/horse-editor',
       params: {
         templateData: JSON.stringify(template),
+        createdAt: template.createdAt,
       },
     });
   };
 
   const handleDeleteTemplate = (template: HorseTemplate) => {
     Alert.alert(
-      'Delete Horse Template',
+      'Delete Horse Profile',
       `Are you sure you want to delete "${template.name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -69,10 +70,10 @@ export default function HorsesScreen() {
             try {
               await deleteHorseTemplate(template.id);
               await loadTemplates();
-              Alert.alert('Success', 'Horse template deleted successfully.');
+              Alert.alert('Success', 'Horse profile deleted successfully.');
             } catch (error) {
               console.error('Error deleting template:', error);
-              Alert.alert('Error', 'Failed to delete template. Please try again.');
+              Alert.alert('Error', 'Failed to delete profile. Please try again.');
             }
           },
         },
@@ -101,7 +102,7 @@ export default function HorsesScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Horse Management</Text>
+            <Text style={styles.title}>Horse Profiles</Text>
             <Text style={styles.subtitle}>Pro Feature</Text>
           </View>
 
@@ -114,7 +115,7 @@ export default function HorsesScreen() {
             />
             <Text style={styles.proTitle}>Upgrade to Pro</Text>
             <Text style={styles.proDescription}>
-              Unlock horse templates to save horse profiles with pre-run reminder templates and incentive registration tracking.
+              Create horse profiles with master settings that auto-load into new events. Save medication schedules, tack photos, and pre-run rituals.
             </Text>
             
             <View style={styles.featuresList}>
@@ -125,7 +126,7 @@ export default function HorsesScreen() {
                   size={24}
                   color={colors.primary}
                 />
-                <Text style={styles.featureText}>Save horse name profiles</Text>
+                <Text style={styles.featureText}>Save horse profiles with custom settings</Text>
               </View>
               <View style={styles.featureItem}>
                 <IconSymbol
@@ -134,7 +135,7 @@ export default function HorsesScreen() {
                   size={24}
                   color={colors.primary}
                 />
-                <Text style={styles.featureText}>Pre-run reminder templates</Text>
+                <Text style={styles.featureText}>Pre-run medication templates</Text>
               </View>
               <View style={styles.featureItem}>
                 <IconSymbol
@@ -143,7 +144,7 @@ export default function HorsesScreen() {
                   size={24}
                   color={colors.primary}
                 />
-                <Text style={styles.featureText}>Incentive registration tracking</Text>
+                <Text style={styles.featureText}>Upload saddle and bit photos</Text>
               </View>
               <View style={styles.featureItem}>
                 <IconSymbol
@@ -152,13 +153,13 @@ export default function HorsesScreen() {
                   size={24}
                   color={colors.primary}
                 />
-                <Text style={styles.featureText}>Annual fee reminders</Text>
+                <Text style={styles.featureText}>Document pre-run rituals and notes</Text>
               </View>
             </View>
 
             <TouchableOpacity
               style={[buttonStyles.primaryButton, styles.upgradeButton]}
-              onPress={() => setShowProModal(true)}
+              onPress={() => router.push('/(tabs)/subscription')}
             >
               <Text style={buttonStyles.buttonText}>Upgrade to Pro</Text>
             </TouchableOpacity>
@@ -183,29 +184,24 @@ export default function HorsesScreen() {
               />
               <Text style={styles.modalTitle}>Pro Feature</Text>
               <Text style={styles.modalText}>
-                This feature is available in the Pro version. Upgrade to unlock horse templates and advanced management features.
+                Horse profiles are available in the Pro version. Upgrade to create unlimited horse profiles with master settings.
               </Text>
-              
-              <View style={styles.comingSoonBanner}>
-                <IconSymbol
-                  ios_icon_name="clock.fill"
-                  android_material_icon_name="schedule"
-                  size={28}
-                  color={colors.primary}
-                />
-                <View style={styles.comingSoonTextContainer}>
-                  <Text style={styles.comingSoonTitle}>COMING SOON!</Text>
-                  <Text style={styles.comingSoonSubtext}>
-                    Pro version is in active development
-                  </Text>
-                </View>
-              </View>
 
               <TouchableOpacity
                 style={[buttonStyles.primaryButton, styles.modalButton]}
+                onPress={() => {
+                  setShowProModal(false);
+                  router.push('/(tabs)/subscription');
+                }}
+              >
+                <Text style={buttonStyles.buttonText}>View Pro Plans</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[buttonStyles.secondaryButton, styles.modalButton]}
                 onPress={() => setShowProModal(false)}
               >
-                <Text style={buttonStyles.buttonText}>Got It</Text>
+                <Text style={buttonStyles.buttonText}>Maybe Later</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -222,8 +218,8 @@ export default function HorsesScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Horse Management</Text>
-          <Text style={styles.subtitle}>Manage your horse templates</Text>
+          <Text style={styles.title}>Horse Profiles</Text>
+          <Text style={styles.subtitle}>Manage your horse profiles</Text>
         </View>
 
         <TouchableOpacity
@@ -237,27 +233,55 @@ export default function HorsesScreen() {
             color={colors.background}
           />
           <Text style={[buttonStyles.buttonText, styles.addButtonText]}>
-            Add Horse Template
+            Add Horse Profile
           </Text>
         </TouchableOpacity>
 
         {loading ? (
           <View style={commonStyles.card}>
-            <Text style={styles.emptyText}>Loading templates...</Text>
+            <Text style={styles.emptyText}>Loading profiles...</Text>
           </View>
         ) : templates.length === 0 ? (
           <View style={commonStyles.card}>
-            <Text style={styles.emptyText}>No horse templates yet.</Text>
+            <Text style={styles.emptyText}>No horse profiles yet.</Text>
             <Text style={styles.emptySubtext}>
-              Create a template to save horse profiles with pre-run reminders.
+              Create a profile to save horse-specific settings and reminders.
             </Text>
           </View>
         ) : (
           templates.map((template) => (
             <View key={template.id} style={styles.templateCard}>
               <View style={styles.templateHeader}>
-                <Text style={styles.templateName}>{template.name}</Text>
+                <View style={styles.templateHeaderLeft}>
+                  <IconSymbol
+                    ios_icon_name="figure.equestrian.sports"
+                    android_material_icon_name="pets"
+                    size={28}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.templateName}>{template.name}</Text>
+                </View>
               </View>
+
+              {(template.saddlePhotoUri || template.bitPhotoUri) && (
+                <View style={styles.photosSection}>
+                  <Text style={styles.sectionTitle}>Tack Photos:</Text>
+                  <View style={styles.photosGrid}>
+                    {template.saddlePhotoUri && (
+                      <View style={styles.photoItem}>
+                        <Image source={{ uri: template.saddlePhotoUri }} style={styles.photoThumbnail} />
+                        <Text style={styles.photoLabel}>Saddle</Text>
+                      </View>
+                    )}
+                    {template.bitPhotoUri && (
+                      <View style={styles.photoItem}>
+                        <Image source={{ uri: template.bitPhotoUri }} style={styles.photoThumbnail} />
+                        <Text style={styles.photoLabel}>Bit</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
 
               {template.reminderTemplates.length > 0 && (
                 <View style={styles.remindersSection}>
@@ -273,22 +297,10 @@ export default function HorsesScreen() {
                 </View>
               )}
 
-              {template.incentiveRegistrations.length > 0 && (
-                <View style={styles.incentivesSection}>
-                  <Text style={styles.sectionTitle}>Incentive Registrations:</Text>
-                  {template.incentiveRegistrations.map((incentive) => (
-                    <View key={incentive.id} style={styles.incentiveRow}>
-                      <View style={styles.incentiveInfo}>
-                        <Text style={styles.incentiveName}>{incentive.name}</Text>
-                        <Text style={styles.incentiveFee}>
-                          ${incentive.annualFee}/year
-                        </Text>
-                      </View>
-                      <Text style={styles.incentiveReminder}>
-                        Remind {incentive.reminderDaysBefore} days before
-                      </Text>
-                    </View>
-                  ))}
+              {template.preRunNotes && (
+                <View style={styles.notesSection}>
+                  <Text style={styles.sectionTitle}>Pre-Run Notes:</Text>
+                  <Text style={styles.notesText}>{template.preRunNotes}</Text>
                 </View>
               )}
 
@@ -386,20 +398,49 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   templateHeader: {
-    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  templateHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
   templateName: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
+    flex: 1,
   },
-  remindersSection: {
+  photosSection: {
     marginBottom: 12,
   },
-  incentivesSection: {
+  photosGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  photoItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  photoThumbnail: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  photoLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  remindersSection: {
     marginBottom: 12,
   },
   sectionTitle: {
@@ -428,33 +469,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  incentiveRow: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    backgroundColor: colors.highlight,
-    borderRadius: 6,
-    marginBottom: 4,
+  notesSection: {
+    marginBottom: 12,
   },
-  incentiveInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  incentiveName: {
+  notesText: {
     fontSize: 14,
     color: colors.text,
-    fontWeight: '600',
-    flex: 1,
-  },
-  incentiveFee: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  incentiveReminder: {
-    fontSize: 13,
-    color: colors.textSecondary,
+    lineHeight: 20,
+    backgroundColor: colors.highlight,
+    padding: 12,
+    borderRadius: 8,
   },
   templateActions: {
     flexDirection: 'row',
@@ -543,33 +567,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 22,
   },
-  comingSoonBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    width: '100%',
-    gap: 12,
-  },
-  comingSoonTextContainer: {
-    flex: 1,
-  },
-  comingSoonTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.background,
-    marginBottom: 4,
-    letterSpacing: 1,
-  },
-  comingSoonSubtext: {
-    fontSize: 14,
-    color: colors.background,
-    fontWeight: '500',
-    opacity: 0.9,
-  },
   modalButton: {
     width: '100%',
+    marginBottom: 8,
   },
 });

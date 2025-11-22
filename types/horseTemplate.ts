@@ -18,6 +18,9 @@ export interface HorseTemplate {
   name: string;
   reminderTemplates: ReminderTemplate[];
   incentiveRegistrations: IncentiveRegistration[];
+  saddlePhotoUri?: string;
+  bitPhotoUri?: string;
+  preRunNotes?: string;
   createdAt: string;
   updatedAt: string;
 }

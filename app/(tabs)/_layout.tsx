@@ -22,6 +22,10 @@ export default function TabLayout() {
     router.push('/horses');
   };
 
+  const handleSubscriptionPress = () => {
+    router.push('/subscription');
+  };
+
   const isActive = (path: string) => {
     if (path === '/(tabs)/(home)') {
       return pathname === '/(tabs)/(home)' || pathname === '/';
@@ -35,6 +39,9 @@ export default function TabLayout() {
         <Stack.Screen name="(home)" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="horses" />
+        <Stack.Screen name="subscription" />
+        <Stack.Screen name="horse-editor" />
+        <Stack.Screen name="event-details" />
       </Stack>
       
       <View style={styles.tabBar}>
@@ -92,7 +99,7 @@ export default function TabLayout() {
               isActive('/profile') && styles.tabButtonTextActive,
             ]}
           >
-            Saved Events
+            Saved
           </Text>
         </TouchableOpacity>
 
@@ -122,6 +129,35 @@ export default function TabLayout() {
             ]}
           >
             Horses
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            isActive('/subscription') && styles.tabButtonActive,
+          ]}
+          onPress={handleSubscriptionPress}
+          activeOpacity={0.7}
+        >
+          <View style={[
+            styles.iconContainer,
+            isActive('/subscription') && styles.iconContainerActive,
+          ]}>
+            <IconSymbol
+              ios_icon_name="star.fill"
+              android_material_icon_name="star"
+              size={24}
+              color={isActive('/subscription') ? colors.primary : colors.textSecondary}
+            />
+          </View>
+          <Text
+            style={[
+              styles.tabButtonText,
+              isActive('/subscription') && styles.tabButtonTextActive,
+            ]}
+          >
+            Pro
           </Text>
         </TouchableOpacity>
       </View>

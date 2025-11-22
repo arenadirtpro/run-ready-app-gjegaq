@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
@@ -11,12 +11,27 @@ import * as Sharing from 'expo-sharing';
 import * as MailComposer from 'expo-mail-composer';
 import * as SMS from 'expo-sms';
 import { captureAndShareView } from '@/utils/imageGenerator';
+import { isProUser } from '@/utils/subscription';
 
 export default function EventDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isSharing, setIsSharing] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const shareableViewRef = useRef(null);
+
+  useEffect(() => {
+    loadProStatus();
+  }, []);
+
+  const loadProStatus = async () => {
+    try {
+      const proStatus = await isProUser();
+      setIsPro(proStatus);
+    } catch (error) {
+      console.error('Error loading pro status:', error);
+    }
+  };
 
   let schedule: SavedSchedule | null = null;
   try {
@@ -308,6 +323,24 @@ export default function EventDetailsScreen() {
   };
 
   const handleShare = () => {
+    if (!isPro) {
+      Alert.alert(
+        'Pro Feature',
+        'Sharing and printing event schedules is a Pro feature. Upgrade to unlock this functionality.',
+        [
+          {
+            text: 'View Pro Plans',
+            onPress: () => router.push('/(tabs)/subscription'),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
     Alert.alert(
       'Share Event Details',
       'Choose how you would like to share this event',
@@ -334,6 +367,27 @@ export default function EventDetailsScreen() {
         },
       ]
     );
+  };
+
+  const handlePrintWithProCheck = () => {
+    if (!isPro) {
+      Alert.alert(
+        'Pro Feature',
+        'Printing event schedules is a Pro feature. Upgrade to unlock this functionality.',
+        [
+          {
+            text: 'View Pro Plans',
+            onPress: () => router.push('/(tabs)/subscription'),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+    handlePrint();
   };
 
   return (
@@ -455,7 +509,11 @@ export default function EventDetailsScreen() {
 
           <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={[buttonStyles.primaryButton, styles.actionButton]}
+              style={[
+                buttonStyles.primaryButton,
+                styles.actionButton,
+                !isPro && styles.actionButtonDisabled,
+              ]}
               onPress={handleShare}
               disabled={isSharing}
             >
@@ -463,27 +521,51 @@ export default function EventDetailsScreen() {
                 ios_icon_name="square.and.arrow.up.fill"
                 android_material_icon_name="share"
                 size={20}
-                color={colors.background}
+                color={isPro ? colors.background : colors.textSecondary}
               />
-              <Text style={[buttonStyles.buttonText, styles.actionButtonText]}>
+              <Text style={[buttonStyles.buttonText, styles.actionButtonText, !isPro && styles.actionButtonTextDisabled]}>
                 {isSharing ? 'Sharing...' : 'Share'}
               </Text>
+              {!isPro && (
+                <View style={styles.proLockBadge}>
+                  <IconSymbol
+                    ios_icon_name="lock.fill"
+                    android_material_icon_name="lock"
+                    size={14}
+                    color={colors.background}
+                  />
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[buttonStyles.secondaryButton, styles.actionButton]}
-              onPress={handlePrint}
+              style={[
+                buttonStyles.secondaryButton,
+                styles.actionButton,
+                !isPro && styles.actionButtonDisabled,
+              ]}
+              onPress={handlePrintWithProCheck}
               disabled={isSharing}
             >
               <IconSymbol
                 ios_icon_name="printer.fill"
                 android_material_icon_name="print"
                 size={20}
-                color={colors.text}
+                color={isPro ? colors.text : colors.textSecondary}
               />
-              <Text style={[buttonStyles.buttonText, styles.actionButtonText]}>
+              <Text style={[buttonStyles.buttonText, styles.actionButtonText, !isPro && styles.actionButtonTextDisabled]}>
                 Print
               </Text>
+              {!isPro && (
+                <View style={styles.proLockBadge}>
+                  <IconSymbol
+                    ios_icon_name="lock.fill"
+                    android_material_icon_name="lock"
+                    size={14}
+                    color={colors.text}
+                  />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -747,6 +829,22 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     marginLeft: 0,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
+  actionButtonTextDisabled: {
+    color: colors.textSecondary,
+  },
+  proLockBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 2,
+    borderColor: colors.background,
   },
   bottomPadding: {
     height: 120,
