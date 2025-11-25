@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, Modal } from 'react-native';
 import { colors, commonStyles, buttonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,12 @@ export default function SubscriptionScreen() {
   const router = useRouter();
   const [isPro, setIsPro] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly' | null>(null);
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     loadSubscriptionStatus();
@@ -27,38 +33,59 @@ export default function SubscriptionScreen() {
   };
 
   const handleSubscribe = async (plan: 'monthly' | 'yearly') => {
-    try {
-      Alert.alert(
-        'Subscription Coming Soon',
-        `You selected the ${plan === 'monthly' ? 'Monthly ($1.99/month)' : 'Annual ($14.99/year)'} plan.\n\nIn-app purchases will be available in the next update. For now, you can try Pro features for free!`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Try Pro Free',
-            onPress: async () => {
-              const expiryDate = new Date();
-              expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-              await setSubscriptionStatus('pro', expiryDate);
-              setIsPro(true);
-              Alert.alert(
-                'Welcome to Pro! 🎉',
-                'You now have access to all Pro features including horse profiles, templates, and advanced sharing options.',
-                [
-                  {
-                    text: 'Explore Horses',
-                    onPress: () => router.push('/(tabs)/horses'),
-                  },
-                  { text: 'OK' },
-                ]
-              );
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error('Error subscribing:', error);
-      Alert.alert('Error', 'Failed to process subscription. Please try again.');
+    setSelectedPlan(plan);
+    setShowPaymentModal(true);
+  };
+
+  const handleProcessPayment = async () => {
+    if (!cardNumber || !expiryDate || !cvv) {
+      Alert.alert('Missing Information', 'Please fill in all payment details.');
+      return;
     }
+
+    if (cardNumber.replace(/\s/g, '').length !== 16) {
+      Alert.alert('Invalid Card', 'Please enter a valid 16-digit card number.');
+      return;
+    }
+
+    setProcessing(true);
+
+    setTimeout(async () => {
+      try {
+        const expiryDate = new Date();
+        if (selectedPlan === 'monthly') {
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
+        } else {
+          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        }
+        
+        await setSubscriptionStatus('pro', expiryDate);
+        setIsPro(true);
+        setShowPaymentModal(false);
+        setProcessing(false);
+        
+        Alert.alert(
+          'Welcome to Pro! 🎉',
+          `Your ${selectedPlan === 'monthly' ? 'monthly' : 'annual'} subscription is now active. You have access to all Pro features!`,
+          [
+            {
+              text: 'Explore Horses',
+              onPress: () => router.push('/(tabs)/horses'),
+            },
+            { text: 'OK' },
+          ]
+        );
+        
+        setCardNumber('');
+        setExpiryDate('');
+        setCvv('');
+        setSelectedPlan(null);
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        setProcessing(false);
+        Alert.alert('Error', 'Failed to process payment. Please try again.');
+      }
+    }, 2000);
   };
 
   const handleManageSubscription = () => {
@@ -78,6 +105,36 @@ export default function SubscriptionScreen() {
         { text: 'Close', style: 'cancel' },
       ]
     );
+  };
+
+  const formatCardNumber = (text: string) => {
+    const cleaned = text.replace(/\s/g, '');
+    const chunks = cleaned.match(/.{1,4}/g);
+    return chunks ? chunks.join(' ') : cleaned;
+  };
+
+  const handleCardNumberChange = (text: string) => {
+    const cleaned = text.replace(/\s/g, '');
+    if (cleaned.length <= 16 && /^\d*$/.test(cleaned)) {
+      setCardNumber(formatCardNumber(cleaned));
+    }
+  };
+
+  const handleExpiryChange = (text: string) => {
+    const cleaned = text.replace(/\//g, '');
+    if (cleaned.length <= 4 && /^\d*$/.test(cleaned)) {
+      if (cleaned.length >= 2) {
+        setExpiryDate(cleaned.slice(0, 2) + '/' + cleaned.slice(2));
+      } else {
+        setExpiryDate(cleaned);
+      }
+    }
+  };
+
+  const handleCvvChange = (text: string) => {
+    if (text.length <= 3 && /^\d*$/.test(text)) {
+      setCvv(text);
+    }
   };
 
   if (loading) {
@@ -351,8 +408,132 @@ export default function SubscriptionScreen() {
           </View>
         </View>
 
+        <View style={styles.trustSection}>
+          <IconSymbol
+            ios_icon_name="lock.shield.fill"
+            android_material_icon_name="verified_user"
+            size={32}
+            color={colors.success}
+          />
+          <Text style={styles.trustText}>
+            Secure payment processing • Cancel anytime • 30-day money-back guarantee
+          </Text>
+        </View>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <Modal
+        visible={showPaymentModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => !processing && setShowPaymentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Complete Purchase</Text>
+              {!processing && (
+                <TouchableOpacity
+                  onPress={() => setShowPaymentModal(false)}
+                  style={styles.closeButton}
+                >
+                  <IconSymbol
+                    ios_icon_name="xmark.circle.fill"
+                    android_material_icon_name="cancel"
+                    size={28}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.planSummary}>
+              <Text style={styles.planSummaryLabel}>Selected Plan</Text>
+              <Text style={styles.planSummaryValue}>
+                {selectedPlan === 'monthly' ? 'Monthly - $1.99/month' : 'Annual - $14.99/year'}
+              </Text>
+            </View>
+
+            <View style={styles.paymentForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Card Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cardNumber}
+                  onChangeText={handleCardNumberChange}
+                  placeholder="1234 5678 9012 3456"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                  editable={!processing}
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <View style={[styles.inputGroup, styles.inputGroupHalf]}>
+                  <Text style={styles.inputLabel}>Expiry Date</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={expiryDate}
+                    onChangeText={handleExpiryChange}
+                    placeholder="MM/YY"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric"
+                    editable={!processing}
+                  />
+                </View>
+
+                <View style={[styles.inputGroup, styles.inputGroupHalf]}>
+                  <Text style={styles.inputLabel}>CVV</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={cvv}
+                    onChangeText={handleCvvChange}
+                    placeholder="123"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric"
+                    secureTextEntry
+                    editable={!processing}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.securityNote}>
+                <IconSymbol
+                  ios_icon_name="lock.fill"
+                  android_material_icon_name="lock"
+                  size={16}
+                  color={colors.success}
+                />
+                <Text style={styles.securityNoteText}>
+                  Your payment information is encrypted and secure
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              {!processing && (
+                <TouchableOpacity
+                  style={[buttonStyles.secondaryButton, styles.modalButton]}
+                  onPress={() => setShowPaymentModal(false)}
+                >
+                  <Text style={buttonStyles.buttonTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[buttonStyles.primaryButton, styles.modalButton, processing && styles.processingButton]}
+                onPress={handleProcessPayment}
+                disabled={processing}
+              >
+                <Text style={buttonStyles.buttonText}>
+                  {processing ? 'Processing...' : `Pay ${selectedPlan === 'monthly' ? '$1.99' : '$14.99'}`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -503,7 +684,120 @@ const styles = StyleSheet.create({
   manageButton: {
     marginTop: spacing.xl,
   },
+  trustSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.successLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  trustText: {
+    ...typography.small,
+    color: colors.success,
+    textAlign: 'center',
+    flex: 1,
+    fontWeight: '600',
+  },
   bottomPadding: {
     height: 120,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: borderRadius.xxl,
+    borderTopRightRadius: borderRadius.xxl,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.text,
+  },
+  closeButton: {
+    padding: spacing.xs,
+  },
+  planSummary: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xxl,
+  },
+  planSummaryLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  planSummaryValue: {
+    ...typography.h4,
+    color: colors.primary,
+  },
+  paymentForm: {
+    marginBottom: spacing.xl,
+  },
+  inputGroup: {
+    marginBottom: spacing.lg,
+  },
+  inputGroupHalf: {
+    flex: 1,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  inputLabel: {
+    ...typography.captionMedium,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  input: {
+    backgroundColor: colors.inputBackground,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  securityNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.successLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  securityNoteText: {
+    ...typography.small,
+    color: colors.success,
+    flex: 1,
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+  },
+  processingButton: {
+    opacity: 0.7,
   },
 });

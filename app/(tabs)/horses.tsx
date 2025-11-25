@@ -219,7 +219,7 @@ export default function HorsesScreen() {
                 style={[buttonStyles.secondaryButton, styles.modalButton]}
                 onPress={() => setShowProModal(false)}
               >
-                <Text style={buttonStyles.buttonText}>Maybe Later</Text>
+                <Text style={buttonStyles.buttonTextSecondary}>Maybe Later</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -331,9 +331,9 @@ export default function HorsesScreen() {
                     ios_icon_name="square.and.arrow.up"
                     android_material_icon_name="share"
                     size={18}
-                    color={colors.text}
+                    color={colors.primary}
                   />
-                  <Text style={[buttonStyles.buttonText, styles.buttonTextWithIcon]}>
+                  <Text style={[buttonStyles.buttonTextSecondary, styles.buttonTextWithIcon]}>
                     View & Share
                   </Text>
                 </TouchableOpacity>
@@ -346,9 +346,9 @@ export default function HorsesScreen() {
                     ios_icon_name="pencil"
                     android_material_icon_name="edit"
                     size={18}
-                    color={colors.text}
+                    color={colors.primary}
                   />
-                  <Text style={[buttonStyles.buttonText, styles.buttonTextWithIcon]}>
+                  <Text style={[buttonStyles.buttonTextSecondary, styles.buttonTextWithIcon]}>
                     Edit
                   </Text>
                 </TouchableOpacity>

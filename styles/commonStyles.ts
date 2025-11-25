@@ -125,15 +125,15 @@ export const buttonStyles = StyleSheet.create({
     elevation: 2,
   },
   secondaryButton: {
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.card,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   accentButton: {
     backgroundColor: colors.accent,
@@ -183,7 +183,7 @@ export const buttonStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   buttonTextSecondary: {
-    color: colors.text,
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.2,

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, buttonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { SavedSchedule } from '@/types/savedSchedule';
 import { getAllSchedules, deleteSchedule } from '@/utils/storage';
 import { cancelNotificationsForSchedule } from '@/utils/notifications';
@@ -10,6 +10,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import * as MailComposer from 'expo-mail-composer';
+import { isProUser, getSubscriptionStatus } from '@/utils/subscription';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -18,14 +19,19 @@ export default function ProfileScreen() {
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'feedback' | 'feature'>('feedback');
   const [feedbackText, setFeedbackText] = useState('');
+  const [isPro, setIsPro] = useState(false);
 
-  const loadSchedules = async () => {
+  const loadData = async () => {
     try {
-      const loadedSchedules = await getAllSchedules();
+      const [loadedSchedules, proStatus] = await Promise.all([
+        getAllSchedules(),
+        isProUser(),
+      ]);
       setSchedules(loadedSchedules);
+      setIsPro(proStatus);
       console.log('Loaded schedules:', loadedSchedules.length);
     } catch (error) {
-      console.error('Error loading schedules:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -33,7 +39,7 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      loadSchedules();
+      loadData();
     }, [])
   );
 
@@ -79,7 +85,7 @@ export default function ProfileScreen() {
             try {
               await cancelNotificationsForSchedule(schedule.id);
               await deleteSchedule(schedule.id);
-              await loadSchedules();
+              await loadData();
               Alert.alert('Success', 'Schedule deleted successfully.');
             } catch (error) {
               console.error('Error deleting schedule:', error);
@@ -145,6 +151,10 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleViewUserProfile = () => {
+    router.push('/(tabs)/user-profile');
+  };
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -162,8 +172,41 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Saved Events</Text>
+          <Text style={styles.title}>My Events</Text>
           <Text style={styles.subtitle}>Manage your event schedules</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.profileCard}
+          onPress={handleViewUserProfile}
+          activeOpacity={0.7}
+        >
+          <View style={styles.profileCardLeft}>
+            <View style={styles.profileIconContainer}>
+              <IconSymbol
+                ios_icon_name="person.circle.fill"
+                android_material_icon_name="account_circle"
+                size={48}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.profileCardText}>
+              <Text style={styles.profileCardTitle}>My Profile</Text>
+              <Text style={styles.profileCardSubtitle}>
+                {isPro ? 'Pro Member' : 'Free Account'} • View details
+              </Text>
+            </View>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron.right"
+            android_material_icon_name="chevron_right"
+            size={24}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Saved Events</Text>
         </View>
 
         {loading ? (
@@ -247,9 +290,9 @@ export default function ProfileScreen() {
                     ios_icon_name="pencil"
                     android_material_icon_name="edit"
                     size={18}
-                    color={colors.text}
+                    color={colors.primary}
                   />
-                  <Text style={[buttonStyles.buttonText, styles.buttonTextWithIcon]}>
+                  <Text style={[buttonStyles.buttonTextSecondary, styles.buttonTextWithIcon]}>
                     Edit
                   </Text>
                 </TouchableOpacity>
@@ -306,9 +349,9 @@ export default function ProfileScreen() {
                 ios_icon_name="lightbulb.fill"
                 android_material_icon_name="lightbulb"
                 size={20}
-                color={colors.text}
+                color={colors.primary}
               />
-              <Text style={[buttonStyles.buttonText, styles.feedbackButtonText]}>
+              <Text style={[buttonStyles.buttonTextSecondary, styles.feedbackButtonText]}>
                 Request Feature
               </Text>
             </TouchableOpacity>
@@ -374,7 +417,7 @@ export default function ProfileScreen() {
                 style={[buttonStyles.secondaryButton, styles.modalButton]}
                 onPress={() => setFeedbackModalVisible(false)}
               >
-                <Text style={buttonStyles.buttonText}>Cancel</Text>
+                <Text style={buttonStyles.buttonTextSecondary}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -421,6 +464,49 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  profileCard: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    boxShadow: '0px 4px 12px rgba(59, 130, 246, 0.15)',
+    elevation: 3,
+  },
+  profileCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    flex: 1,
+  },
+  profileIconContainer: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.full,
+    padding: spacing.xs,
+  },
+  profileCardText: {
+    flex: 1,
+  },
+  profileCardTitle: {
+    ...typography.h4,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  profileCardSubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  sectionHeader: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
   },
   emptyText: {
     fontSize: 16,
